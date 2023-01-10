@@ -295,7 +295,7 @@ impl UnionFnState {
             let make_err = |error: &dyn ToTokens| {
                 format_err_spanned!(
                     error,
-                    "must have `ctx: &mut Self::Context` as first argument"
+                    "must have type of `&mut Self::Context` as first argument"
                 )
                 .into_combine(format_err_spanned!(
                     context,
