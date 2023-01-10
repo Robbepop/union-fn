@@ -1,6 +1,6 @@
 use std::collections::VecDeque;
 
-use crate::error::ExtError;
+use crate::{error::ExtError, utils::make_tuple_type};
 use proc_macro2::{Span, TokenStream as TokenStream2};
 use quote::{quote_spanned, ToTokens};
 use syn::{spanned::Spanned, Result};
@@ -493,7 +493,7 @@ impl UnionFn {
             let bindings = (0..args.len()).map(|index| quote::format_ident!("_{}", index)).collect::<Vec<_>>();
             let args = args.iter().collect::<Vec<_>>();
             let block = method.default.as_ref().unwrap();
-            let tuple_bindings = make_tuple(span, &bindings);
+            let tuple_bindings = make_tuple_type(span, &bindings);
 
             quote_spanned!(span=>
                 fn #method_ident( #ctx_param args: <#ident as ::union_fn::UnionFn>::Args ) -> <#ident as ::union_fn::UnionFn>::Output {
@@ -643,7 +643,7 @@ impl UnionFn {
                     // Throw away context argument before processing.
                     let _ = arg_types.next();
                 }
-                let inputs = make_tuple(method.span(), arg_types);
+                let inputs = make_tuple_type(method.span(), arg_types);
                 quote_spanned!(method.span() =>
                     #ident: #inputs
                 )
@@ -683,7 +683,7 @@ impl UnionFn {
                 let bindings = (0..args.len())
                     .map(|index| quote::format_ident!("_{}", index))
                     .collect::<Vec<_>>();
-                let constructor_params = make_tuple(span, &bindings);
+                let constructor_params = make_tuple_type(span, &bindings);
                 quote_spanned!(span=>
                     pub fn #method_ident( #( #constructor_args ),* ) -> Self {
                         Self { #method_ident: #constructor_params }
@@ -700,34 +700,5 @@ impl UnionFn {
                 #( #constructors )*
             }
         )
-    }
-}
-
-/// Turns `args` into a Rust tuple type.
-///
-/// # Note
-///
-/// - Returns `()` if `args` is empty.
-/// - Returns `T` if `args` represents a single `T` element.
-/// - Returns `(T1, T2, ..)` otherwise.
-///
-/// Uses `span` as the base span for expansion.
-fn make_tuple<I, T>(span: Span, args: I) -> TokenStream2
-where
-    I: IntoIterator<Item = T>,
-    T: ToTokens,
-{
-    let args = args.into_iter().collect::<Vec<_>>();
-    match args.len() {
-        0 => quote_spanned!(span=> () ),
-        1 => {
-            let fst = &args[0];
-            quote_spanned!(fst.span()=> #fst)
-        }
-        _ => {
-            quote_spanned!(span=>
-                ( #( #args ),* )
-            )
-        }
     }
 }
