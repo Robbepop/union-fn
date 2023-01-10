@@ -39,8 +39,11 @@ trait Instruction {
         ctx.next_instr()
     }
 
-    fn ret(ctx: &mut Self::Context) -> Self::Output {
-        let _ = ctx; // TODO: make it possible to write _ctx
+    fn goto(ctx: &mut Self::Context, new_ip: usize) -> Self::Output {
+        ctx.goto_instr(new_ip)
+    }
+
+    fn ret(_ctx: &mut Self::Context) -> Self::Output {
         Ok(Control::Return)
     }
 }
@@ -62,6 +65,11 @@ impl ExecutionContext {
 
     pub fn next_instr(&mut self) -> Result<Control, TrapCode> {
         self.ip += 1;
+        Ok(Control::Continue)
+    }
+
+    pub fn goto_instr(&mut self, new_ip: usize) -> Result<Control, TrapCode> {
+        self.ip += new_ip;
         Ok(Control::Continue)
     }
 
