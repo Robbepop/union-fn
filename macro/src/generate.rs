@@ -433,6 +433,7 @@ impl UnionFn {
             )
         });
         quote_spanned!(span=>
+            #[derive(::core::marker::Copy, ::core::clone::Clone)]
             pub struct #ident {
                 handler: fn(#ctx <#ident as ::union_fn::UnionFn>::Args) -> <#ident as ::union_fn::UnionFn>::Output,
                 args: <#ident as ::union_fn::UnionFn>::Args,
