@@ -11,7 +11,7 @@ pub fn func_union(args: TokenStream2, item: TokenStream2) -> TokenStream2 {
         .unwrap_or_else(|error| error.to_compile_error())
 }
 
-pub struct UnionFn {
+struct UnionFn {
     /// The underlying original Rust trait item.
     item: syn::ItemTrait,
     /// Extraneous state required for analysis and expansion.
@@ -20,7 +20,7 @@ pub struct UnionFn {
 
 /// State required for [`UnionFn`] analysis and expansion.
 #[derive(Default)]
-pub struct UnionFnState {
+struct UnionFnState {
     /// The shared function context if any.
     context: Option<syn::TraitItemType>,
     /// The shared output type if any.
@@ -30,7 +30,7 @@ pub struct UnionFnState {
 }
 
 /// The method signature shared by all functions in the [`UnionFn`].
-pub struct SharedSignature {
+struct SharedSignature {
     pub span: Span,
     pub constness: Option<syn::token::Const>,
     pub asyncness: Option<syn::token::Async>,
