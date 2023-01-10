@@ -79,19 +79,25 @@ impl UnionFnState {
         if !item.generics.params.is_empty() {
             bail_spanned!(
                 item.generics,
-                "cannot have generics for Output type in #[union_fn] trait"
+                "cannot have generics for Context type in #[union_fn] trait"
+            )
+        }
+        if let Some(where_clause) = &item.generics.where_clause {
+            bail_spanned!(
+                where_clause,
+                "cannot have where clause for Context type in #[union_fn] trait"
             )
         }
         if !item.bounds.is_empty() {
             bail_spanned!(
                 item.bounds,
-                "cannot have bounds for Output type in #[union_fn] trait"
+                "cannot have trait bounds for Context type in #[union_fn] trait"
             )
         }
         if item.default.is_none() {
             bail_spanned!(
                 item,
-                "must have a default for Output type in #[union_fn] trait"
+                "must have a default for Context type in #[union_fn] trait"
             )
         }
         self.context = Some(item.clone());
@@ -128,6 +134,12 @@ impl UnionFnState {
             bail_spanned!(
                 item.generics,
                 "cannot have generics for Output type in #[union_fn] trait"
+            )
+        }
+        if let Some(where_clause) = &item.generics.where_clause {
+            bail_spanned!(
+                where_clause,
+                "cannot have where clause for Output type in #[union_fn] trait"
             )
         }
         if !item.bounds.is_empty() {
@@ -260,6 +272,14 @@ impl UnionFnState {
                         return make_err(ty);
                     }
                 }
+            }
+        }
+        if item.default.is_none() {
+            bail_spanned!(item, "must have default implementation")
+        }
+        for arg in item.sig.inputs.iter() {
+            if let syn::FnArg::Receiver(receiver) = arg {
+                bail_spanned!(receiver, "must not have self receiver argument")
             }
         }
         if let Some(context) = self.get_context() {
