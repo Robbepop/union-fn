@@ -183,7 +183,7 @@ impl UnionFnState {
         )
     }
 
-    /// Registers a method signature of the #[union_fn] trait.
+    /// Registers a method signature of the `#[union_fn]` trait.
     ///
     /// # Errors
     ///
