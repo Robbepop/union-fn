@@ -1,6 +1,8 @@
+use std::collections::VecDeque;
+
 use crate::error::ExtError;
 use proc_macro2::{Span, TokenStream as TokenStream2};
-use quote::ToTokens;
+use quote::{quote_spanned, ToTokens};
 use syn::{spanned::Spanned, Result};
 
 pub fn func_union(args: TokenStream2, item: TokenStream2) -> TokenStream2 {
@@ -56,7 +58,13 @@ impl SharedSignature {
 }
 
 impl UnionFnState {
-    pub fn set_context(&mut self, item: &syn::TraitItemType) -> Result<()> {
+    /// Registers a context type for the `#[union_fn]` trait.
+    ///
+    /// # Errors
+    ///
+    /// - If multiple or conflicting contexts are encountered.
+    /// - If the context type is invalid or uses unsupported features.
+    pub fn register_context(&mut self, item: &syn::TraitItemType) -> Result<()> {
         if let Some(context) = self.context.as_ref() {
             return format_err_spanned!(
                 item,
@@ -90,6 +98,7 @@ impl UnionFnState {
         Ok(())
     }
 
+    /// Returns a shared reference the to registered context type if any.
     pub fn get_context(&self) -> Option<&syn::Type> {
         if let Some(context) = self.context.as_ref() {
             return Some(&context.default.as_ref().unwrap().1);
@@ -97,7 +106,13 @@ impl UnionFnState {
         None
     }
 
-    pub fn set_output(&mut self, item: &syn::TraitItemType) -> Result<()> {
+    /// Registers an output type for the `#[union_fn]` trait.
+    ///
+    /// # Errors
+    ///
+    /// - If multiple or conflicting output types are encountered.
+    /// - If the output type is invalid or uses unsupported features.
+    pub fn register_output(&mut self, item: &syn::TraitItemType) -> Result<()> {
         if let Some(output) = self.output.as_ref() {
             return format_err_spanned!(
                 item,
@@ -131,6 +146,7 @@ impl UnionFnState {
         Ok(())
     }
 
+    /// Returns a shared reference the to registered output type if any.
     pub fn get_output(&self) -> Option<&syn::Type> {
         if let Some(output) = self.output.as_ref() {
             return Some(&output.default.as_ref().unwrap().1);
@@ -145,10 +161,10 @@ impl UnionFnState {
     /// If an unsupported or invalid type structure is encountered.
     pub fn register_type(&mut self, item: &syn::TraitItemType) -> syn::Result<()> {
         if item.ident == "Context" {
-            return self.set_context(item);
+            return self.register_context(item);
         }
         if item.ident == "Output" {
-            return self.set_output(item);
+            return self.register_output(item);
         }
         bail_spanned!(
             item,
@@ -231,29 +247,20 @@ impl UnionFnState {
     /// If an unsupported or invalid method structure is encountered.
     pub fn register_method(&mut self, item: &syn::TraitItemMethod) -> syn::Result<()> {
         self.register_sigature(&item.sig)?;
-        match self.get_output() {
-            Some(output) => {
-                let make_err = |error: &dyn ToTokens| {
-                    format_err_spanned!(error, "must return Self::Output or equivalent type")
-                        .into_combine(format_err_spanned!(output, "since Context is defined here"))
-                        .into_result()
-                };
-                match &item.sig.output {
-                    syn::ReturnType::Default => return make_err(item),
-                    syn::ReturnType::Type(_, ty) => {
-                        if !(**ty == syn::parse_quote!(Self::Output) || &**ty == output) {
-                            return make_err(ty);
-                        }
+        if let Some(output) = self.get_output() {
+            let make_err = |error: &dyn ToTokens| {
+                format_err_spanned!(error, "must return Self::Output")
+                    .into_combine(format_err_spanned!(output, "since Output is defined here"))
+                    .into_result()
+            };
+            match &item.sig.output {
+                syn::ReturnType::Default => return make_err(item),
+                syn::ReturnType::Type(_, ty) => {
+                    if **ty != syn::parse_quote!(Self::Output) {
+                        return make_err(ty);
                     }
                 }
             }
-            None => match item.sig.output {
-                syn::ReturnType::Default => (), // ok
-                syn::ReturnType::Type(_, _) => bail_spanned!(
-                    item,
-                    "cannot have a return type if Output is undefined in #[union_fn]"
-                ),
-            },
         }
         if let Some(context) = self.get_context() {
             let make_err = |error: &dyn ToTokens| {
@@ -390,6 +397,267 @@ impl UnionFn {
 
     /// Expands the parsed and analyzed [`UnionFn`] to proper Rust code.
     pub fn expand(&self) -> TokenStream2 {
-        TokenStream2::new()
+        let span = self.item.span();
+        let reflect = self.expand_reflection();
+        let handler = self.expand_handler();
+        let args = self.expand_args();
+        quote_spanned!(span=>
+            const _: () = {
+                #reflect
+                #args
+            };
+            #handler
+        )
+    }
+
+    fn expand_reflection(&self) -> TokenStream2 {
+        let span = self.item.span();
+        let ident = &self.item.ident;
+        let output = self.expand_output_type();
+        quote_spanned!(span=>
+            impl ::union_fn::UnionFn for #ident {
+                type Output = #output;
+                type Args = UnionFnArgs;
+            }
+        )
+    }
+
+    fn expand_handler(&self) -> TokenStream2 {
+        let span = self.item.span();
+        let ident = &self.item.ident;
+        let call_impl = self.expand_call_impl();
+        let func_impls = self.expand_func_impls();
+        let ctx = self.state.get_context().map(|_| {
+            quote_spanned!(span=>
+                ctx: &mut <#ident as ::union_fn::CallWithContext>::Context,
+            )
+        });
+        quote_spanned!(span=>
+            pub struct #ident {
+                handler: fn(#ctx <#ident as ::union_fn::UnionFn>::Args) -> <#ident as ::union_fn::UnionFn>::Output,
+                args: <#ident as ::union_fn::UnionFn>::Args,
+            }
+
+            #call_impl
+            #func_impls
+        )
+    }
+
+    fn expand_func_impls(&self) -> TokenStream2 {
+        let span = self.item.span();
+        let ident = &self.item.ident;
+        let handlers = self.item.items.iter().filter_map(|item| match item {
+            syn::TraitItem::Method(item) => Some(item),
+            _ => None,
+        }).map(|method| {
+            let span = method.span();
+            let method_ident = &method.sig.ident;
+            let constructor_ident = method_ident.clone();
+            let handler_ident = quote::format_ident!("_{}_handler", method_ident);
+            let impl_ident = quote::format_ident!("_{}_impl", method_ident);
+            let ctx_param = self.state.get_context().map(|_| {
+                quote_spanned!(span=>
+                    ctx: &mut <#ident as ::union_fn::CallWithContext>::Context,
+                )
+            });
+            let ctx_arg = self.state.get_context().map(|_| {
+                quote_spanned!(span=>
+                    ctx,
+                )
+            });
+            let mut args = method.sig.inputs.iter().filter_map(|arg| match arg {
+                syn::FnArg::Typed(pat_type) => Some(pat_type),
+                syn::FnArg::Receiver(_) => None
+            }).collect::<VecDeque<_>>();
+            if self.state.get_context().is_some() {
+                // Throw away context argument before processing.
+                args.pop_front();
+            }
+            let bindings = (0..args.len()).map(|index| quote::format_ident!("_{}", index)).collect::<Vec<_>>();
+            let args = args.iter().collect::<Vec<_>>();
+            let block = method.default.as_ref().unwrap();
+            let constructor_args = args.iter().enumerate().map(|(n, arg)| {
+                let span = arg.span();
+                let binding = quote::format_ident!("_{}", n);
+                let ty = &arg.ty;
+                quote_spanned!(span=>
+                    #binding: #ty
+                )
+            });
+            let tuple_bindings = make_tuple(span, &bindings);
+
+            quote_spanned!(span=>
+                fn #handler_ident( #ctx_param args: <#ident as ::union_fn::UnionFn>::Args ) -> <#ident as ::union_fn::UnionFn>::Output {
+                    let #tuple_bindings = unsafe { args.#method_ident };
+                    Self::#impl_ident( #ctx_arg #( #bindings ),* )
+                }
+
+                fn #impl_ident( #ctx_param #( #args ),* ) -> <#ident as ::union_fn::UnionFn>::Output #block
+
+                fn #constructor_ident( #( #constructor_args ),* ) -> Self {
+                    Self {
+                        handler: Self::#handler_ident,
+                        args: <#ident as ::union_fn::UnionFn>::Args::#method_ident( #( #bindings ),* ),
+                    }
+                }
+            )
+        });
+        quote_spanned!(span=>
+            impl #ident {
+                #( #handlers )*
+            }
+        )
+    }
+
+    fn expand_output_type(&self) -> TokenStream2 {
+        let span = self.item.span();
+        match self.state.get_output() {
+            Some(output) => {
+                quote_spanned!(span=> #output)
+            }
+            None => self
+                .state
+                .signature
+                .as_ref()
+                .map(|sig| match &sig.output {
+                    syn::ReturnType::Default => quote_spanned!(span=> ()),
+                    syn::ReturnType::Type(_, ty) => quote_spanned!(span=> #ty),
+                })
+                .unwrap_or_else(|| quote_spanned!(span=> ())),
+        }
+    }
+
+    fn expand_call_impl(&self) -> TokenStream2 {
+        let span = self.item.span();
+        let ident = &self.item.ident;
+        match self.state.get_context() {
+            Some(context) => {
+                quote_spanned!(span=>
+                    impl ::union_fn::CallWithContext for #ident {
+                        type Context = #context;
+
+                        fn call(self, ctx: &mut Self::Context) -> <#ident as ::union_fn::UnionFn>::Output {
+                            (self.handler)(ctx, self.args)
+                        }
+                    }
+                )
+            }
+            None => {
+                quote_spanned!(span=>
+                    impl ::union_fn::Call for #ident {
+                        fn call(self) -> <#ident as ::union_fn::UnionFn>::Output {
+                            (self.handler)(ctx, self.args)
+                        }
+                    }
+                )
+            }
+        }
+    }
+
+    fn expand_args(&self) -> TokenStream2 {
+        let variants = self
+            .item
+            .items
+            .iter()
+            .filter_map(|item| match item {
+                syn::TraitItem::Method(item) => Some(item),
+                _ => None,
+            })
+            .map(|method| {
+                let ident = &method.sig.ident;
+                let mut arg_types = method.sig.inputs.iter().filter_map(|arg| match arg {
+                    syn::FnArg::Typed(pat_type) => Some(&pat_type.ty),
+                    syn::FnArg::Receiver(_) => None,
+                });
+                if self.state.get_context().is_some() {
+                    // Throw away context argument before processing.
+                    let _ = arg_types.next();
+                }
+                let inputs = make_tuple(method.span(), arg_types);
+                quote_spanned!(method.span() =>
+                    #ident: #inputs
+                )
+            });
+        let constructors = self
+            .item
+            .items
+            .iter()
+            .filter_map(|item| match item {
+                syn::TraitItem::Method(item) => Some(item),
+                _ => None,
+            })
+            .map(|method| {
+                let span = method.span();
+                let method_ident = &method.sig.ident;
+                let mut args = method
+                    .sig
+                    .inputs
+                    .iter()
+                    .filter_map(|arg| match arg {
+                        syn::FnArg::Typed(pat_type) => Some(pat_type),
+                        syn::FnArg::Receiver(_) => None,
+                    })
+                    .collect::<VecDeque<_>>();
+                if self.state.get_context().is_some() {
+                    // Throw away context argument before processing.
+                    args.pop_front();
+                }
+                let constructor_args = args.iter().enumerate().map(|(n, arg)| {
+                    let span = arg.span();
+                    let binding = quote::format_ident!("_{}", n);
+                    let ty = &arg.ty;
+                    quote_spanned!(span=>
+                        #binding: #ty
+                    )
+                });
+                let bindings = (0..args.len())
+                    .map(|index| quote::format_ident!("_{}", index))
+                    .collect::<Vec<_>>();
+                let constructor_params = make_tuple(span, &bindings);
+                quote_spanned!(span=>
+                    pub fn #method_ident( #( #constructor_args ),* ) -> Self {
+                        Self { #method_ident: #constructor_params }
+                    }
+                )
+            });
+        quote_spanned!(self.item.span() =>
+            #[derive(core::marker::Copy, core::clone::Clone)]
+            pub union UnionFnArgs {
+                #( #variants ),*
+            }
+
+            impl UnionFnArgs {
+                #( #constructors )*
+            }
+        )
+    }
+}
+
+/// Turns `args` into a Rust tuple type.
+///
+/// # Note
+///
+/// - Returns `()` if `args` is empty.
+/// - Returns `T` if `args` represents a single `T` element.
+/// - Returns `(T1, T2, ..)` otherwise.
+///
+/// Uses `span` as the base span for expansion.
+fn make_tuple<I, T>(span: Span, args: I) -> TokenStream2
+where
+    I: IntoIterator<Item = T>,
+    T: ToTokens,
+{
+    let args = args.into_iter().collect::<Vec<_>>();
+    match args.len() {
+        0 => quote_spanned!(span=> () ),
+        1 => {
+            let fst = &args[0];
+            quote_spanned!(fst.span()=> #fst)
+        }
+        _ => {
+            quote_spanned!(span=>
+                ( #( #args ),* )
+            )
+        }
     }
 }
