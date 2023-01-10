@@ -616,7 +616,7 @@ impl UnionFn {
                 quote_spanned!(span=>
                     impl ::union_fn::Call for #ident {
                         fn call(self) -> <#ident as ::union_fn::UnionFn>::Output {
-                            (self.handler)(ctx, self.args)
+                            (self.handler)(self.args)
                         }
                     }
                 )
