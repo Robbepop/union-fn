@@ -212,49 +212,45 @@ impl UnionFnState {
             }
             Some(signature) => {
                 let span = sig.span();
+                let make_err =
+                    |err_span: Option<Span>, context: &str, mis_span: Span| -> syn::Result<()> {
+                        format_err!(
+                            err_span.map(|c| c.span()).unwrap_or(span),
+                            "encountered mismatch in {context} for #[union_fn] method"
+                        )
+                        .into_combine(format_err!(
+                            mis_span,
+                            "mismatch with this method"
+                        ))
+                        .into_result()
+                    };
                 if sig.constness != signature.constness {
-                    return format_err!(
-                        sig.constness.map(|c| c.span()).unwrap_or(span),
-                        "encountered mismatch in constness for #[union_fn] method"
-                    )
-                    .into_combine(format_err!(
+                    return make_err(
+                        sig.constness.as_ref().map(Spanned::span),
+                        "constness",
                         signature.constness_span(),
-                        "mismatch with this method"
-                    ))
-                    .into_result();
+                    );
                 }
                 if sig.asyncness != signature.asyncness {
-                    return format_err!(
-                        sig.asyncness.map(|c| c.span()).unwrap_or(span),
-                        "encountered mismatch in asyncness for #[union_fn] method"
-                    )
-                    .into_combine(format_err!(
+                    return make_err(
+                        sig.asyncness.as_ref().map(Spanned::span),
+                        "asyncness",
                         signature.asyncness_span(),
-                        "mismatch with this method"
-                    ))
-                    .into_result();
+                    );
                 }
                 if sig.unsafety != signature.unsafety {
-                    return format_err!(
-                        sig.unsafety.map(|c| c.span()).unwrap_or(span),
-                        "encountered mismatch in unsafety for #[union_fn] method"
-                    )
-                    .into_combine(format_err!(
+                    return make_err(
+                        sig.unsafety.as_ref().map(Spanned::span),
+                        "unsafety",
                         signature.unsafety_span(),
-                        "mismatch with this method"
-                    ))
-                    .into_result();
+                    );
                 }
                 if sig.abi != signature.abi {
-                    return format_err!(
-                        sig.abi.as_ref().map(|c| c.span()).unwrap_or(span),
-                        "encountered mismatch in abi for #[union_fn] method"
-                    )
-                    .into_combine(format_err!(
+                    return make_err(
+                        sig.abi.as_ref().map(Spanned::span),
+                        "abi",
                         signature.abi_span(),
-                        "mismatch with this method"
-                    ))
-                    .into_result();
+                    );
                 }
             }
         }
