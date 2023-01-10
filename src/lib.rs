@@ -2,9 +2,6 @@ pub use union_fn_macro::union_fn;
 
 /// Implemented by union functions without context.
 pub trait Call: UnionFn {
-    /// The common output type of all functions in the union function.
-    type Output;
-
     /// Calls the union function.
     fn call(self) -> <Self as UnionFn>::Output;
 }
