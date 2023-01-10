@@ -281,9 +281,7 @@ impl UnionFnState {
                         "must not have a `self` receiver as first argument in #[union_fn] methods"
                     ),
                     syn::FnArg::Typed(pat_type) => {
-                        if !(arg == &syn::parse_quote!(ctx: &mut Self::Context)
-                            || &*pat_type.ty == &syn::parse_quote!(&mut #context))
-                        {
+                        if &*pat_type.ty != &syn::parse_quote!(&mut Self::Context) {
                             return make_err(pat_type);
                         }
                     }
@@ -456,6 +454,16 @@ impl UnionFn {
             let constructor_ident = method_ident.clone();
             let handler_ident = quote::format_ident!("_{}_handler", method_ident);
             let impl_ident = quote::format_ident!("_{}_impl", method_ident);
+            let ctx_ident = self.state.get_context().map(|_| &method.sig.inputs[0]).and_then(|fn_arg| match fn_arg {
+                syn::FnArg::Typed(pat_type) => Some(pat_type),
+                syn::FnArg::Receiver(_) => None,
+            }).map(|pat_type| {
+                let span = pat_type.span();
+                let pat = &pat_type.pat;
+                quote_spanned!(span=>
+                    #pat: &mut <#ident as ::union_fn::CallWithContext>::Context,
+                )
+            });
             let ctx_param = self.state.get_context().map(|_| {
                 quote_spanned!(span=>
                     ctx: &mut <#ident as ::union_fn::CallWithContext>::Context,
@@ -493,7 +501,7 @@ impl UnionFn {
                     Self::#impl_ident( #ctx_arg #( #bindings ),* )
                 }
 
-                fn #impl_ident( #ctx_param #( #args ),* ) -> <#ident as ::union_fn::UnionFn>::Output #block
+                fn #impl_ident( #ctx_ident #( #args ),* ) -> <#ident as ::union_fn::UnionFn>::Output #block
 
                 pub fn #constructor_ident( #( #constructor_args ),* ) -> Self {
                     Self {
