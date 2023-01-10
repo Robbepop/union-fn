@@ -495,7 +495,7 @@ impl UnionFn {
 
                 fn #impl_ident( #ctx_param #( #args ),* ) -> <#ident as ::union_fn::UnionFn>::Output #block
 
-                fn #constructor_ident( #( #constructor_args ),* ) -> Self {
+                pub fn #constructor_ident( #( #constructor_args ),* ) -> Self {
                     Self {
                         handler: Self::#handler_ident,
                         args: <#ident as ::union_fn::UnionFn>::Args::#method_ident( #( #bindings ),* ),
