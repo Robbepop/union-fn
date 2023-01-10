@@ -397,12 +397,14 @@ impl UnionFn {
     pub fn expand(&self) -> TokenStream2 {
         let span = self.item.span();
         let reflect = self.expand_reflection();
-        let handler = self.expand_handler();
         let args = self.expand_args();
+        let delegator = self.expand_delegator();
+        let handler = self.expand_handler();
         quote_spanned!(span=>
             const _: () = {
                 #reflect
                 #args
+                #delegator
             };
             #handler
         )
@@ -416,43 +418,20 @@ impl UnionFn {
             impl ::union_fn::UnionFn for #ident {
                 type Output = #output;
                 type Args = UnionFnArgs;
+                type Delegator = UnionFnDelegator;
             }
         )
     }
 
-    fn expand_handler(&self) -> TokenStream2 {
+    fn expand_delegator(&self) -> TokenStream2 {
         let span = self.item.span();
         let ident = &self.item.ident;
-        let call_impl = self.expand_call_impl();
-        let func_impls = self.expand_func_impls();
-        let ctx = self.state.get_context().map(|_| {
-            quote_spanned!(span=>
-                ctx: &mut <#ident as ::union_fn::CallWithContext>::Context,
-            )
-        });
-        quote_spanned!(span=>
-            #[derive(::core::marker::Copy, ::core::clone::Clone)]
-            pub struct #ident {
-                handler: fn(#ctx <#ident as ::union_fn::UnionFn>::Args) -> <#ident as ::union_fn::UnionFn>::Output,
-                args: <#ident as ::union_fn::UnionFn>::Args,
-            }
-
-            #call_impl
-            #func_impls
-        )
-    }
-
-    fn expand_func_impls(&self) -> TokenStream2 {
-        let span = self.item.span();
-        let ident = &self.item.ident;
-        let handlers = self.item.items.iter().filter_map(|item| match item {
+        let delegators = self.item.items.iter().filter_map(|item| match item {
             syn::TraitItem::Method(item) => Some(item),
             _ => None,
         }).map(|method| {
             let span = method.span();
             let method_ident = &method.sig.ident;
-            let constructor_ident = method_ident.clone();
-            let handler_ident = quote::format_ident!("_{}_handler", method_ident);
             let impl_ident = quote::format_ident!("_{}_impl", method_ident);
             let ctx_ident = self.state.get_context().map(|_| &method.sig.inputs[0]).and_then(|fn_arg| match fn_arg {
                 syn::FnArg::Typed(pat_type) => Some(pat_type),
@@ -485,6 +464,67 @@ impl UnionFn {
             let bindings = (0..args.len()).map(|index| quote::format_ident!("_{}", index)).collect::<Vec<_>>();
             let args = args.iter().collect::<Vec<_>>();
             let block = method.default.as_ref().unwrap();
+            let tuple_bindings = make_tuple(span, &bindings);
+
+            quote_spanned!(span=>
+                fn #method_ident( #ctx_param args: <#ident as ::union_fn::UnionFn>::Args ) -> <#ident as ::union_fn::UnionFn>::Output {
+                    let #tuple_bindings = unsafe { args.#method_ident };
+                    Self::#impl_ident( #ctx_arg #( #bindings ),* )
+                }
+
+                fn #impl_ident( #ctx_ident #( #args ),* ) -> <#ident as ::union_fn::UnionFn>::Output #block
+            )
+        });
+        quote_spanned!(span=>
+            pub enum UnionFnDelegator {}
+
+            impl UnionFnDelegator {
+                #( #delegators )*
+            }
+        )
+    }
+
+    fn expand_handler(&self) -> TokenStream2 {
+        let span = self.item.span();
+        let ident = &self.item.ident;
+        let call_impl = self.expand_call_impl();
+        let constructors = self.expand_constructors();
+        let ctx = self.state.get_context().map(|_| {
+            quote_spanned!(span=>
+                ctx: &mut <#ident as ::union_fn::CallWithContext>::Context,
+            )
+        });
+        quote_spanned!(span=>
+            #[derive(::core::marker::Copy, ::core::clone::Clone)]
+            pub struct #ident {
+                handler: fn(#ctx <#ident as ::union_fn::UnionFn>::Args) -> <#ident as ::union_fn::UnionFn>::Output,
+                args: <#ident as ::union_fn::UnionFn>::Args,
+            }
+
+            #call_impl
+            #constructors
+        )
+    }
+
+    fn expand_constructors(&self) -> TokenStream2 {
+        let span = self.item.span();
+        let ident = &self.item.ident;
+        let handlers = self.item.items.iter().filter_map(|item| match item {
+            syn::TraitItem::Method(item) => Some(item),
+            _ => None,
+        }).map(|method| {
+            let span = method.span();
+            let method_ident = &method.sig.ident;
+            let mut args = method.sig.inputs.iter().filter_map(|arg| match arg {
+                syn::FnArg::Typed(pat_type) => Some(pat_type),
+                syn::FnArg::Receiver(_) => None
+            }).collect::<VecDeque<_>>();
+            if self.state.get_context().is_some() {
+                // Throw away context argument before processing.
+                args.pop_front();
+            }
+            let bindings = (0..args.len()).map(|index| quote::format_ident!("_{}", index)).collect::<Vec<_>>();
+            let args = args.iter().collect::<Vec<_>>();
             let constructor_args = args.iter().enumerate().map(|(n, arg)| {
                 let span = arg.span();
                 let binding = quote::format_ident!("_{}", n);
@@ -493,19 +533,11 @@ impl UnionFn {
                     #binding: #ty
                 )
             });
-            let tuple_bindings = make_tuple(span, &bindings);
 
             quote_spanned!(span=>
-                fn #handler_ident( #ctx_param args: <#ident as ::union_fn::UnionFn>::Args ) -> <#ident as ::union_fn::UnionFn>::Output {
-                    let #tuple_bindings = unsafe { args.#method_ident };
-                    Self::#impl_ident( #ctx_arg #( #bindings ),* )
-                }
-
-                fn #impl_ident( #ctx_ident #( #args ),* ) -> <#ident as ::union_fn::UnionFn>::Output #block
-
-                pub fn #constructor_ident( #( #constructor_args ),* ) -> Self {
+                pub fn #method_ident( #( #constructor_args ),* ) -> Self {
                     Self {
-                        handler: Self::#handler_ident,
+                        handler: <#ident as ::union_fn::UnionFn>::Delegator::#method_ident,
                         args: <#ident as ::union_fn::UnionFn>::Args::#method_ident( #( #bindings ),* ),
                     }
                 }

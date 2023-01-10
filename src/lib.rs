@@ -24,4 +24,6 @@ pub trait UnionFn {
     type Output;
     /// The generated parameter union type shared by all functions in the union function.
     type Args;
+    /// The underlying delegator type that implements all the functions.
+    type Delegator;
 }
