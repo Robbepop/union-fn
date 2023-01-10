@@ -4,5 +4,5 @@ fn main() {}
 trait Foo {
     type Context = i32;
 
-    fn foo() {}
+    fn foo(ctx: &Self::Context) {}
 }
