@@ -1,0 +1,5 @@
+error: cannot have trait bounds for Context type in #[union_fn] trait
+ --> tests/ui/fail/context-type-bounds.rs:5:19
+  |
+5 |     type Context: Copy = i32;
+  |                   ^^^^

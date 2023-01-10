@@ -8,3 +8,6 @@ license = "MIT"
 
 [dependencies]
 union-fn-macro = { version = "0.1.0", path = "macro" }
+
+[dev-dependencies]
+trybuild = { version = "1.0.60", features = ["diff"] }

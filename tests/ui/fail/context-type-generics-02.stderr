@@ -1,0 +1,5 @@
+error: cannot have where clause for Context type in #[union_fn] trait
+ --> tests/ui/fail/context-type-generics-02.rs:5:24
+  |
+5 |     type Context = i32 where i32: Copy;
+  |                        ^^^^^^^^^^^^^^^

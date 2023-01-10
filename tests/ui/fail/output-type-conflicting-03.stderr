@@ -1,0 +1,11 @@
+error: encountered conflicting Output types in #[union_fn] trait
+ --> tests/ui/fail/output-type-conflicting-03.rs:9:5
+  |
+9 |     type Output = i64;
+  |     ^^^^^^^^^^^^^^^^^^
+
+error: previous Output definition here
+ --> tests/ui/fail/output-type-conflicting-03.rs:5:5
+  |
+5 |     type Output = i32;
+  |     ^^^^^^^^^^^^^^^^^^

@@ -1,0 +1,5 @@
+error: cannot have generics for Output type in #[union_fn] trait
+ --> tests/ui/fail/output-type-generics-01.rs:5:16
+  |
+5 |     type Output<T> = T;
+  |                ^^^

@@ -1,0 +1,5 @@
+error: cannot have where clause for Output type in #[union_fn] trait
+ --> tests/ui/fail/output-type-generics-02.rs:5:23
+  |
+5 |     type Output = i32 where i32: Copy;
+  |                       ^^^^^^^^^^^^^^^

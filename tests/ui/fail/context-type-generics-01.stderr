@@ -1,0 +1,5 @@
+error: cannot have generics for Context type in #[union_fn] trait
+ --> tests/ui/fail/context-type-generics-01.rs:5:17
+  |
+5 |     type Context<T> = T;
+  |                 ^^^

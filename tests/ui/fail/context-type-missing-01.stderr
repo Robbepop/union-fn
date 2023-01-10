@@ -1,0 +1,5 @@
+error: must have a default for Context type in #[union_fn] trait
+ --> tests/ui/fail/context-type-missing-01.rs:5:5
+  |
+5 |     type Context;
+  |     ^^^^^^^^^^^^^

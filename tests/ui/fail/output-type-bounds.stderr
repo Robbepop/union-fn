@@ -1,0 +1,5 @@
+error: cannot have bounds for Output type in #[union_fn] trait
+ --> tests/ui/fail/output-type-bounds.rs:5:18
+  |
+5 |     type Output: Copy = i32;
+  |                  ^^^^

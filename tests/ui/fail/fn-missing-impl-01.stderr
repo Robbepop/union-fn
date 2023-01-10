@@ -1,0 +1,5 @@
+error: must have default implementation
+ --> tests/ui/fail/fn-missing-impl-01.rs:5:5
+  |
+5 |     fn foo();
+  |     ^^^^^^^^^

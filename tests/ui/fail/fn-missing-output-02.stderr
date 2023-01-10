@@ -1,0 +1,11 @@
+error: must return Self::Output
+ --> tests/ui/fail/fn-missing-output-02.rs:8:5
+  |
+8 |     fn bar() {}
+  |     ^^^^^^^^^^^
+
+error: since Output is defined here
+ --> tests/ui/fail/fn-missing-output-02.rs:5:19
+  |
+5 |     type Output = i32;
+  |                   ^^^
