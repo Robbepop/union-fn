@@ -190,6 +190,15 @@ impl UnionFnState {
     ///
     /// If there is a signature mismatch between methods.
     fn register_sigature(&mut self, sig: &syn::Signature) -> syn::Result<()> {
+        if !sig.generics.params.is_empty() {
+            bail_spanned!(sig.generics, "must not be generic")
+        }
+        if let Some(where_clause) = &sig.generics.where_clause {
+            bail_spanned!(where_clause, "must not have a where clause")
+        }
+        if let Some(variadic) = &sig.variadic {
+            bail_spanned!(variadic, "must not have variadic arguments")
+        }
         match self.signature.as_ref() {
             None => {
                 self.signature = Some(SharedSignature {
