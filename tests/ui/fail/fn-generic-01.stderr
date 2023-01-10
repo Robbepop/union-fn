@@ -1,0 +1,5 @@
+error: must not be generic
+ --> tests/ui/fail/fn-generic-01.rs:5:11
+  |
+5 |     fn foo<T>() {}
+  |           ^^^

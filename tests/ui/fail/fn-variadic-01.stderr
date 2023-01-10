@@ -1,0 +1,5 @@
+error: must not have variadic arguments
+ --> tests/ui/fail/fn-variadic-01.rs:5:12
+  |
+5 |     fn foo(...) {}
+  |            ^^^

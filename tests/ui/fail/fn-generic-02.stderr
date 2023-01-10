@@ -1,0 +1,5 @@
+error: must not have a where clause
+ --> tests/ui/fail/fn-generic-02.rs:5:14
+  |
+5 |     fn foo() where i32: Copy {}
+  |              ^^^^^^^^^^^^^^^
