@@ -315,7 +315,7 @@ impl UnionFnState {
                         }
                     }
                 },
-                None => return make_err(&item.sig.inputs),
+                None => return make_err(&item.sig),
             }
         }
         Ok(())
