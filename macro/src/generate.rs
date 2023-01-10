@@ -399,7 +399,7 @@ impl UnionFn {
         let reflect = self.expand_reflection();
         let args = self.expand_args();
         let delegator = self.expand_delegator();
-        let handler = self.expand_handler();
+        let handler = self.expand_union_fn();
         quote_spanned!(span=>
             const _: () = {
                 #reflect
@@ -484,7 +484,7 @@ impl UnionFn {
         )
     }
 
-    fn expand_handler(&self) -> TokenStream2 {
+    fn expand_union_fn(&self) -> TokenStream2 {
         let span = self.item.span();
         let ident = &self.item.ident;
         let call_impl = self.expand_call_impl();
