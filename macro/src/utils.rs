@@ -1,5 +1,5 @@
 use proc_macro2::{Span, TokenStream as TokenStream2};
-use quote::{ToTokens, quote_spanned};
+use quote::{quote_spanned, ToTokens};
 use syn::spanned::Spanned;
 
 /// Turns `args` into a Rust tuple type.

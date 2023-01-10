@@ -2,8 +2,8 @@ use proc_macro::TokenStream;
 
 #[macro_use]
 mod error;
-mod utils;
 mod generate;
+mod utils;
 
 #[proc_macro_attribute]
 pub fn union_fn(attr: TokenStream, item: TokenStream) -> TokenStream {

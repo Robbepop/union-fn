@@ -1,8 +1,7 @@
-use std::collections::VecDeque;
-
 use crate::{error::ExtError, utils::make_tuple_type};
 use proc_macro2::{Span, TokenStream as TokenStream2};
 use quote::{quote_spanned, ToTokens};
+use std::collections::VecDeque;
 use syn::{spanned::Spanned, Result};
 
 pub fn func_union(args: TokenStream2, item: TokenStream2) -> TokenStream2 {
@@ -218,10 +217,7 @@ impl UnionFnState {
                             err_span.map(|c| c.span()).unwrap_or(span),
                             "encountered mismatch in {context} for #[union_fn] method"
                         )
-                        .into_combine(format_err!(
-                            mis_span,
-                            "mismatch with this method"
-                        ))
+                        .into_combine(format_err!(mis_span, "mismatch with this method"))
                         .into_result()
                     };
                 if sig.constness != signature.constness {
