@@ -1,0 +1,11 @@
+error: must have type of `&mut Self::Context` as first argument
+ --> tests/ui/fail/fn-missing-context-02.rs:8:5
+  |
+8 |     fn bar() {}
+  |     ^^^^^^^^
+
+error: since Context is defined here
+ --> tests/ui/fail/fn-missing-context-02.rs:5:20
+  |
+5 |     type Context = i32;
+  |                    ^^^

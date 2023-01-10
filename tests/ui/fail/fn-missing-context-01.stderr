@@ -1,0 +1,11 @@
+error: must have type of `&mut Self::Context` as first argument
+ --> tests/ui/fail/fn-missing-context-01.rs:7:5
+  |
+7 |     fn foo() {}
+  |     ^^^^^^^^
+
+error: since Context is defined here
+ --> tests/ui/fail/fn-missing-context-01.rs:5:20
+  |
+5 |     type Context = i32;
+  |                    ^^^

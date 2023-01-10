@@ -1,0 +1,11 @@
+error: must have type of `&mut Self::Context` as first argument
+ --> tests/ui/fail/fn-invalid-context-03.rs:7:12
+  |
+7 |     fn foo(ctx: &mut i32) {}
+  |            ^^^^^^^^^^^^^
+
+error: since Context is defined here
+ --> tests/ui/fail/fn-invalid-context-03.rs:5:20
+  |
+5 |     type Context = i32;
+  |                    ^^^
