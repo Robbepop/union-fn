@@ -302,7 +302,7 @@ impl UnionFnState {
                         "must not have a `self` receiver as first argument in #[union_fn] methods"
                     ),
                     syn::FnArg::Typed(pat_type) => {
-                        if &*pat_type.ty != &syn::parse_quote!(&mut Self::Context) {
+                        if *pat_type.ty != syn::parse_quote!(&mut Self::Context) {
                             return make_err(pat_type);
                         }
                     }
@@ -390,8 +390,7 @@ impl UnionFn {
     fn analyze_items(state: &mut UnionFnState, items: &[syn::TraitItem]) -> Result<()> {
         items
             .iter()
-            .map(|item| Self::analyze_item(state, item))
-            .collect::<Result<()>>()?;
+            .try_for_each(|item| Self::analyze_item(state, item))?;
         Ok(())
     }
 
@@ -675,7 +674,7 @@ impl UnionFn {
                 let bindings = (0..args.len())
                     .map(|index| quote::format_ident!("_{}", index))
                     .collect::<Vec<_>>();
-                let constructor_params = make_tuple_type(span, &bindings);
+                let constructor_params = make_tuple_type(span, bindings);
                 quote_spanned!(span=>
                     pub fn #method_ident( #( #constructor_args ),* ) -> Self {
                         Self { #method_ident: #constructor_params }
