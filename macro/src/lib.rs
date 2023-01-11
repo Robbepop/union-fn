@@ -36,7 +36,7 @@ mod utils;
 /// Given the following Rust code and `#[union_fn]` macro invocation:
 ///
 /// ```
-/// # use union_fn::union_fn;
+/// # use ::union_fn::{union_fn, CallWithContext as _, IntoOpt as _};
 /// #
 /// #[union_fn]
 /// trait Counter {
@@ -90,6 +90,8 @@ mod utils;
 /// The proc macro will generate roughly the following expansion:
 ///
 /// ```
+/// # use ::union_fn::{union_fn, CallWithContext as _, IntoOpt as _};
+/// #
 /// #[derive(Copy, Clone)]
 /// pub enum Counter {
 ///     /// Bumps the value `by` the amount.

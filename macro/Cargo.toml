@@ -19,3 +19,6 @@ syn = { version = "1", features = ["full", "extra-traits"] }
 proc-macro2 = "1"
 quote = "1"
 heck = "0.4.0"
+
+[dev-dependencies]
+union-fn = { path = ".." }
