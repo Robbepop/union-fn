@@ -440,6 +440,24 @@ impl UnionFn {
             })
             .map(UnionFnMethod::from)
     }
+
+    /// Expand to the `#[union_fn]` `Output` type if any or `()`.
+    fn output_type(&self) -> syn::Type {
+        let span = self.item.span();
+        let empty_tuple = || syn::parse_quote_spanned!(span=> ());
+        match self.state.get_output() {
+            Some(output) => output.clone(),
+            None => self
+                .state
+                .signature
+                .as_ref()
+                .map(|sig| match &sig.output {
+                    syn::ReturnType::Default => empty_tuple(),
+                    syn::ReturnType::Type(_, ty) => (**ty).clone(),
+                })
+                .unwrap_or_else(empty_tuple),
+        }
+    }
 }
 
 /// A method of the `#[union_fn]` trait.
@@ -601,7 +619,7 @@ impl UnionFn {
     fn expand_reflection(&self) -> TokenStream2 {
         let span = self.item.span();
         let ident = &self.item.ident;
-        let output = self.expand_output_type();
+        let output = self.output_type();
         quote_spanned!(span=>
             impl ::union_fn::UnionFn for #ident {
                 type Output = #output;
@@ -688,24 +706,6 @@ impl UnionFn {
                 #( #constructors )*
             }
         )
-    }
-
-    fn expand_output_type(&self) -> TokenStream2 {
-        let span = self.item.span();
-        match self.state.get_output() {
-            Some(output) => {
-                quote_spanned!(span=> #output)
-            }
-            None => self
-                .state
-                .signature
-                .as_ref()
-                .map(|sig| match &sig.output {
-                    syn::ReturnType::Default => quote_spanned!(span=> ()),
-                    syn::ReturnType::Type(_, ty) => quote_spanned!(span=> #ty),
-                })
-                .unwrap_or_else(|| quote_spanned!(span=> ())),
-        }
     }
 
     /// Expands the trait impl of either `union_fn::Call` or `union_fn::CallWithContext`.
