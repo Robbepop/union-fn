@@ -4,7 +4,7 @@ use quote::{quote_spanned, ToTokens};
 use std::collections::VecDeque;
 use syn::{spanned::Spanned, Result};
 
-pub fn func_union(args: TokenStream2, item: TokenStream2) -> TokenStream2 {
+pub fn union_fn(args: TokenStream2, item: TokenStream2) -> TokenStream2 {
     UnionFn::new(args, item)
         .map(|func| func.expand())
         .unwrap_or_else(|error| error.to_compile_error())

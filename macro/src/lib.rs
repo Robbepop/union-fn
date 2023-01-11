@@ -7,5 +7,5 @@ mod utils;
 
 #[proc_macro_attribute]
 pub fn union_fn(attr: TokenStream, item: TokenStream) -> TokenStream {
-    generate::func_union(attr.into(), item.into()).into()
+    generate::union_fn(attr.into(), item.into()).into()
 }
