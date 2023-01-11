@@ -3,6 +3,7 @@ use proc_macro::TokenStream;
 #[macro_use]
 mod error;
 mod generate;
+mod method;
 mod utils;
 
 #[proc_macro_attribute]
