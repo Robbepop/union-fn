@@ -1,4 +1,4 @@
-use crate::analyse::UnionFnState;
+use crate::{analyse::UnionFnState, utils::AttributeExt};
 use proc_macro2::Span;
 use quote::format_ident;
 use syn::spanned::Spanned as _;
@@ -31,6 +31,14 @@ impl<'a> UnionFnMethod<'a> {
     /// Returns the attributes of the method.
     pub fn attrs(&self) -> &[syn::Attribute] {
         &self.item.attrs
+    }
+
+    /// Returns an iterator yielding the doc attributes of the method.
+    pub fn doc_attrs(&self) -> impl Iterator<Item = &'a syn::Attribute> + 'a {
+        self.item
+            .attrs
+            .iter()
+            .filter(|attr| attr.is_docs_attribute())
     }
 
     /// Returns the inputs of the method without the context parameter.

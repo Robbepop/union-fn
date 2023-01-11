@@ -185,9 +185,11 @@ impl UnionFn {
         self.methods().map(|method| {
             let method_span = method.span();
             let method_ident = method.ident();
+            let method_docs = method.doc_attrs();
             let variant_ident = method_ident.to_upper_camel_case();
             let variant_fields = method.ident_inputs(&self.state);
             quote_spanned!(method_span=>
+                #( #method_docs )*
                 #variant_ident {
                     #( #variant_fields ),*
                 }
@@ -348,9 +350,11 @@ impl UnionFn {
         self.methods().map(|method| {
             let method_span = method.span();
             let method_ident = method.ident();
+            let method_docs = method.doc_attrs();
             let params = method.input_types(&self.state);
             let tuple_params = make_tuple_type(method_span, params);
             quote_spanned!(method_span =>
+                #( #method_docs )*
                 #method_ident: #tuple_params
             )
         })
