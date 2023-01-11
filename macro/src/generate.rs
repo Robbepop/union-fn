@@ -759,7 +759,7 @@ impl UnionFn {
             let method_span = method.span();
             let method_ident = method.ident();
             let params = method.input_types(&self.state);
-            let tuple_params = make_tuple_type(method_span, &params);
+            let tuple_params = make_tuple_type(method_span, params);
             quote_spanned!(method_span =>
                 #method_ident: #tuple_params
             )
@@ -773,7 +773,7 @@ impl UnionFn {
             let method_ident = method.ident();
             let params = method.ident_inputs(&self.state);
             let param_bindings = method.input_bindings(&self.state);
-            let tuple_bindings = make_tuple_type(method_span, &param_bindings);
+            let tuple_bindings = make_tuple_type(method_span, param_bindings);
             quote_spanned!(method_span=>
                 pub fn #method_ident( #( #params ),* ) -> Self {
                     Self { #method_ident: #tuple_bindings }
