@@ -1,13 +1,18 @@
 [package]
 name = "union-fn-macro"
 version = "0.1.0"
-edition = "2021"
-license = "MIT"
+documentation = "https://docs.rs/union-fn-macro/"
+description = "Proc. macro implementation for creating efficient \"inline closures\"."
+authors.workspace = true
+repository.workspace = true
+edition.workspace = true
+readme.workspace = true
+license.workspace = true
+keywords.workspace = true
+categories.workspace = true
 
 [lib]
 proc-macro = true
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 syn = { version = "1", features = ["full", "extra-traits"] }
