@@ -708,6 +708,7 @@ impl UnionFn {
         }
     }
 
+    /// Expands the trait impl of either `union_fn::Call` or `union_fn::CallWithContext`.
     fn expand_call_impl(&self) -> TokenStream2 {
         let span = self.item.span();
         let ident = &self.item.ident;
