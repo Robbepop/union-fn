@@ -130,14 +130,15 @@ impl UnionFn {
                 #( #variants ),*
             }
 
-            impl #trait_ident {
-                /// Converts the `#[union_fn]` enum to the call optimized type.
-                pub fn into_opt(self) -> <#trait_ident as ::union_fn::UnionFn>::Opt {
+            impl ::union_fn::IntoOpt for #trait_ident {
+                fn into_opt(self) -> <#trait_ident as ::union_fn::UnionFn>::Opt {
                     match self {
                         #( #conversions )*
                     }
                 }
+            }
 
+            impl #trait_ident {
                 #( #constructors )*
             }
 
@@ -210,7 +211,10 @@ impl UnionFn {
 
                         fn call(self, ctx: &mut Self::Context) -> <#trait_ident as ::union_fn::UnionFn>::Output {
                             <<#trait_ident as ::union_fn::UnionFn>::Opt
-                                as ::union_fn::CallWithContext>::call(self.into_opt(), ctx)
+                                as ::union_fn::CallWithContext>::call(
+                                    <#trait_ident as ::union_fn::IntoOpt>::into_opt(self),
+                                    ctx,
+                                )
                         }
                     }
                 )
@@ -220,7 +224,9 @@ impl UnionFn {
                     impl ::union_fn::Call for #trait_ident {
                         fn call(self) -> <#trait_ident as ::union_fn::UnionFn>::Output {
                             <<#trait_ident as ::union_fn::UnionFn>::Opt
-                                as ::union_fn::Call>::call(self.into_opt())
+                                as ::union_fn::Call>::call(
+                                    <#trait_ident as ::union_fn::IntoOpt>::into_opt(self)
+                                )
                         }
                     }
                 )

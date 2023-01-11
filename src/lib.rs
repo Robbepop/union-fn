@@ -15,6 +15,12 @@ pub trait CallWithContext: UnionFn {
     fn call(self, ctx: &mut Self::Context) -> <Self as UnionFn>::Output;
 }
 
+/// Implemented by the `#[union_fn]` enum type for the call optimized conversion.
+pub trait IntoOpt: UnionFn {
+    /// Converts the `#[union_fn]` enum to the call optimized type.
+    fn into_opt(self) -> <Self as UnionFn>::Opt;
+}
+
 /// Trait implemented by a union function.
 pub trait UnionFn {
     /// The common output type of all functions in the union function.
