@@ -52,9 +52,7 @@ impl<'a> UnionFnMethod<'a> {
 
     /// Returns the input types of the method without the context parameter.
     pub fn input_types(&self, state: &UnionFnState) -> Vec<&syn::Type> {
-        self.inputs(state)
-            .map(|pat_type| &*pat_type.ty)
-            .collect()
+        self.inputs(state).map(|pat_type| &*pat_type.ty).collect()
     }
 
     /// Returns the input bindings of the method inputs without the context parameter.
