@@ -1,6 +1,6 @@
 use heck::AsUpperCamelCase;
 use proc_macro2::{Span, TokenStream as TokenStream2};
-use quote::{quote_spanned, ToTokens, format_ident};
+use quote::{format_ident, quote_spanned, ToTokens};
 use syn::spanned::Spanned;
 
 /// Extension methods for [`syn::Ident`].

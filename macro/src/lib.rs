@@ -2,6 +2,7 @@ use analyse::UnionFnState;
 use method::UnionFnMethod;
 use proc_macro::TokenStream;
 use proc_macro2::Span;
+use quote::format_ident;
 use syn::spanned::Spanned;
 
 #[macro_use]
@@ -32,6 +33,21 @@ impl UnionFn {
     /// Returns the identifier of the `#[union_fn]` trait.
     pub fn ident(&self) -> &syn::Ident {
         &self.item.ident
+    }
+
+    /// Returns the identifier for the call optimized `#[union_fn]` type.
+    pub fn ident_opt(&self) -> syn::Ident {
+        format_ident!("{}Opt", self.ident())
+    }
+
+    /// Returns the identifier for the args union `#[union_fn]` type.
+    pub fn ident_args(&self) -> syn::Ident {
+        format_ident!("{}Args", self.ident())
+    }
+
+    /// Returns the identifier for the delegate `#[union_fn]` type.
+    pub fn ident_delegate(&self) -> syn::Ident {
+        format_ident!("{}Delegate", self.ident())
     }
 
     /// Returns an iterator over the `#[union_fn]` methods.

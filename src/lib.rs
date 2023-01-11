@@ -19,8 +19,10 @@ pub trait CallWithContext: UnionFn {
 pub trait UnionFn {
     /// The common output type of all functions in the union function.
     type Output;
-    /// The generated parameter union type shared by all functions in the union function.
+    /// The call optimized `#[union_fn]` type.
+    type Opt;
+    /// Type responsible to hold call optimized parameters.
     type Args;
-    /// The underlying delegator type that implements all the functions.
+    /// Type responsible to delegate optimized calls for the call optimized `#[union_fn]` type.
     type Delegator;
 }

@@ -1,25 +1,25 @@
+use crate::utils::IdentExt as _;
 use crate::{utils::make_tuple_type, UnionFn};
 use proc_macro2::TokenStream as TokenStream2;
 use quote::{format_ident, quote_spanned};
 use syn::spanned::Spanned as _;
-use crate::utils::IdentExt as _;
 
 impl UnionFn {
     /// Expands the parsed and analyzed [`UnionFn`] to proper Rust code.
     pub fn expand(&self) -> TokenStream2 {
         let span = self.item.span();
         let reflect = self.expand_reflection();
-        let args = self.expand_union_args();
-        let delegator = self.expand_delegator();
-        let handler = self.expand_union_fn();
+        let args_type = self.expand_union_fn_args();
+        let delegate_type = self.expand_union_fn_delegate();
+        let opt_type = self.expand_union_fn_opt();
         let enum_type = self.expand_union_fn_enum();
         quote_spanned!(span=>
             const _: () = {
                 #reflect
-                #args
-                #delegator
+                #args_type
+                #delegate_type
+                #opt_type
             };
-            #handler
             #enum_type
         )
     }
@@ -28,26 +28,32 @@ impl UnionFn {
     fn expand_reflection(&self) -> TokenStream2 {
         let trait_span = self.span();
         let trait_ident = self.ident();
+        let ident_opt = self.ident_opt();
+        let ident_args = self.ident_args();
+        let ident_delegate = self.ident_delegate();
         let output = self.output_type();
         quote_spanned!(trait_span=>
-            impl ::union_fn::UnionFn for #trait_ident {
+            impl ::union_fn::UnionFn for #ident_opt {
                 type Output = #output;
-                type Args = UnionFnArgs;
-                type Delegator = UnionFnDelegator;
+                type Opt = Self;
+                type Args = #ident_args;
+                type Delegator = #ident_delegate;
             }
 
-            impl ::union_fn::UnionFn for UnionFnEnum {
+            impl ::union_fn::UnionFn for #trait_ident {
                 type Output = #output;
-                type Args = UnionFnArgs;
-                type Delegator = UnionFnDelegator;
+                type Opt = #ident_opt;
+                type Args = #ident_args;
+                type Delegator = #ident_delegate;
             }
         )
     }
 
     /// Expand hidden delegators from `UnionFnArgs` to actual function parameters and implementations.
-    fn expand_delegator(&self) -> TokenStream2 {
+    fn expand_union_fn_delegate(&self) -> TokenStream2 {
         let trait_span = self.span();
         let trait_ident = self.ident();
+        let ident_delegate = self.ident_delegate();
         let delegates = self.methods().map(|method| {
             let method_span = method.span();
             let method_ident = method.ident();
@@ -78,18 +84,19 @@ impl UnionFn {
             )
         });
         quote_spanned!(trait_span=>
-            pub enum UnionFnDelegator {}
+            pub enum #ident_delegate {}
 
-            impl UnionFnDelegator {
+            impl #ident_delegate {
                 #( #delegates )*
             }
         )
     }
 
     /// Expand the `#[union_fn]` type.
-    fn expand_union_fn(&self) -> TokenStream2 {
+    fn expand_union_fn_opt(&self) -> TokenStream2 {
         let span = self.span();
         let ident = self.ident();
+        let ident_opt = self.ident_opt();
         let call_impl = self.expand_call_impl();
         let constructors = self.expand_constructors();
         let ctx = self.state.get_context().map(|_| {
@@ -99,7 +106,7 @@ impl UnionFn {
         });
         quote_spanned!(span=>
             #[derive(::core::marker::Copy, ::core::clone::Clone)]
-            pub struct #ident {
+            pub struct #ident_opt {
                 handler: fn(#ctx <#ident as ::union_fn::UnionFn>::Args) -> <#ident as ::union_fn::UnionFn>::Output,
                 args: <#ident as ::union_fn::UnionFn>::Args,
             }
@@ -118,13 +125,14 @@ impl UnionFn {
         let conversions = self.expand_union_fn_enum_conversion_arms();
         let call_impl = self.expand_union_fn_enum_call_impl();
         quote_spanned!(trait_span=>
-            pub enum UnionFnEnum {
+            #[derive(::core::marker::Copy, ::core::clone::Clone)]
+            pub enum #trait_ident {
                 #( #variants ),*
             }
 
-            impl UnionFnEnum {
+            impl #trait_ident {
                 /// Converts the `#[union_fn]` enum to the call optimized type.
-                pub fn into_opt(self) -> #trait_ident {
+                pub fn into_opt(self) -> <#trait_ident as ::union_fn::UnionFn>::Opt {
                     match self {
                         #( #conversions )*
                     }
@@ -184,7 +192,7 @@ impl UnionFn {
                 Self::#variant_ident {
                     #( #fields ),*
                 } => {
-                    #trait_ident::#method_ident( #( #fields ),* )
+                    <#trait_ident as ::union_fn::UnionFn>::Opt::#method_ident( #( #fields ),* )
                 }
             )
         })
@@ -197,20 +205,22 @@ impl UnionFn {
         match self.state.get_context() {
             Some(context) => {
                 quote_spanned!(trait_span=>
-                    impl ::union_fn::CallWithContext for UnionFnEnum {
+                    impl ::union_fn::CallWithContext for #trait_ident {
                         type Context = #context;
 
                         fn call(self, ctx: &mut Self::Context) -> <#trait_ident as ::union_fn::UnionFn>::Output {
-                            <#trait_ident as ::union_fn::CallWithContext>::call(self.into_opt(), ctx)
+                            <<#trait_ident as ::union_fn::UnionFn>::Opt
+                                as ::union_fn::CallWithContext>::call(self.into_opt(), ctx)
                         }
                     }
                 )
             }
             None => {
                 quote_spanned!(trait_span=>
-                    impl ::union_fn::Call for UnionFnEnum {
+                    impl ::union_fn::Call for #trait_ident {
                         fn call(self) -> <#trait_ident as ::union_fn::UnionFn>::Output {
-                            <#trait_ident as ::union_fn::Call>::call(self.into_opt())
+                            <<#trait_ident as ::union_fn::UnionFn>::Opt
+                                as ::union_fn::Call>::call(self.into_opt())
                         }
                     }
                 )
@@ -222,6 +232,7 @@ impl UnionFn {
     fn expand_constructors(&self) -> TokenStream2 {
         let trait_span = self.span();
         let trait_ident = self.ident();
+        let ident_opt = self.ident_opt();
         let constructors = self.methods().map(|method| {
             let method_span = method.span();
             let method_ident = method.ident();
@@ -239,7 +250,7 @@ impl UnionFn {
             )
         });
         quote_spanned!(trait_span=>
-            impl #trait_ident {
+            impl #ident_opt {
                 #( #constructors )*
             }
         )
@@ -249,10 +260,11 @@ impl UnionFn {
     fn expand_call_impl(&self) -> TokenStream2 {
         let span = self.span();
         let ident = self.ident();
+        let ident_opt = self.ident_opt();
         match self.state.get_context() {
             Some(context) => {
                 quote_spanned!(span=>
-                    impl ::union_fn::CallWithContext for #ident {
+                    impl ::union_fn::CallWithContext for #ident_opt {
                         type Context = #context;
 
                         fn call(self, ctx: &mut Self::Context) -> <#ident as ::union_fn::UnionFn>::Output {
@@ -263,7 +275,7 @@ impl UnionFn {
             }
             None => {
                 quote_spanned!(span=>
-                    impl ::union_fn::Call for #ident {
+                    impl ::union_fn::Call for #ident_opt {
                         fn call(self) -> <#ident as ::union_fn::UnionFn>::Output {
                             (self.handler)(self.args)
                         }
@@ -274,17 +286,18 @@ impl UnionFn {
     }
 
     /// Expands the `#[union_fn]` union arguments type and impls.
-    fn expand_union_args(&self) -> TokenStream2 {
+    fn expand_union_fn_args(&self) -> TokenStream2 {
         let trait_span = self.span();
+        let ident_args = self.ident_args();
         let variants = self.expand_union_args_variants();
         let constructors = self.expand_union_args_constructors();
         quote_spanned!(trait_span =>
             #[derive(core::marker::Copy, core::clone::Clone)]
-            pub union UnionFnArgs {
+            pub union #ident_args {
                 #( #variants ),*
             }
 
-            impl UnionFnArgs {
+            impl #ident_args {
                 #( #constructors )*
             }
         )
