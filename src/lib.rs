@@ -1,3 +1,5 @@
+#![no_std]
+
 pub use union_fn_macro::union_fn;
 
 /// Implemented by union functions without context.
