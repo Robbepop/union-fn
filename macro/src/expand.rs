@@ -26,11 +26,11 @@ impl UnionFn {
 
     /// Exapnds the code to implement the base `UnionFn` trait.
     fn expand_reflection(&self) -> TokenStream2 {
-        let span = self.item.span();
-        let ident = &self.item.ident;
+        let trait_span = self.span();
+        let trait_ident = self.ident();
         let output = self.output_type();
-        quote_spanned!(span=>
-            impl ::union_fn::UnionFn for #ident {
+        quote_spanned!(trait_span=>
+            impl ::union_fn::UnionFn for #trait_ident {
                 type Output = #output;
                 type Args = UnionFnArgs;
                 type Delegator = UnionFnDelegator;
@@ -247,8 +247,8 @@ impl UnionFn {
 
     /// Expands the trait impl of either `union_fn::Call` or `union_fn::CallWithContext`.
     fn expand_call_impl(&self) -> TokenStream2 {
-        let span = self.item.span();
-        let ident = &self.item.ident;
+        let span = self.span();
+        let ident = self.ident();
         match self.state.get_context() {
             Some(context) => {
                 quote_spanned!(span=>
