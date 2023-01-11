@@ -38,18 +38,22 @@ struct SharedSignature {
 }
 
 impl SharedSignature {
+    /// Returns the span of the shared `const` token or the signature itself.
     pub fn constness_span(&self) -> Span {
         self.constness.map(|c| c.span()).unwrap_or(self.span)
     }
 
+    /// Returns the span of the shared `async` token or the signature itself.
     pub fn asyncness_span(&self) -> Span {
         self.asyncness.map(|c| c.span()).unwrap_or(self.span)
     }
 
+    /// Returns the span of the shared `unsafe` token or the signature itself.
     pub fn unsafety_span(&self) -> Span {
         self.unsafety.map(|c| c.span()).unwrap_or(self.span)
     }
 
+    /// Returns the span of the shared `abi` or the signature itself.
     pub fn abi_span(&self) -> Span {
         self.abi.as_ref().map(|c| c.span()).unwrap_or(self.span)
     }
