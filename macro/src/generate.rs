@@ -687,46 +687,27 @@ impl UnionFn {
         )
     }
 
+    /// Expand the `#[union_fn]` constructors.
     fn expand_constructors(&self) -> TokenStream2 {
-        let span = self.item.span();
-        let ident = &self.item.ident;
-        let handlers = self.item.items.iter().filter_map(|item| match item {
-            syn::TraitItem::Method(item) => Some(item),
-            _ => None,
-        }).map(|method| {
-            let span = method.span();
-            let method_ident = &method.sig.ident;
-            let mut args = method.sig.inputs.iter().filter_map(|arg| match arg {
-                syn::FnArg::Typed(pat_type) => Some(pat_type),
-                syn::FnArg::Receiver(_) => None
-            }).collect::<VecDeque<_>>();
-            if self.state.get_context().is_some() {
-                // Throw away context argument before processing.
-                args.pop_front();
-            }
-            let bindings = (0..args.len()).map(|index| quote::format_ident!("_{}", index)).collect::<Vec<_>>();
-            let args = args.iter().collect::<Vec<_>>();
-            let constructor_args = args.iter().enumerate().map(|(n, arg)| {
-                let span = arg.span();
-                let binding = quote::format_ident!("_{}", n);
-                let ty = &arg.ty;
-                quote_spanned!(span=>
-                    #binding: #ty
-                )
-            });
-
-            quote_spanned!(span=>
-                pub fn #method_ident( #( #constructor_args ),* ) -> Self {
+        let trait_span = self.span();
+        let trait_ident = self.ident();
+        let constructors = self.methods().map(|method| {
+            let method_span = method.span();
+            let method_ident = method.ident();
+            let params = method.ident_inputs(&self.state);
+            let param_bindings = method.input_bindings(&self.state);
+            quote_spanned!(method_span=>
+                pub fn #method_ident( #( #params ),* ) -> Self {
                     Self {
-                        handler: <#ident as ::union_fn::UnionFn>::Delegator::#method_ident,
-                        args: <#ident as ::union_fn::UnionFn>::Args::#method_ident( #( #bindings ),* ),
+                        handler: <#trait_ident as ::union_fn::UnionFn>::Delegator::#method_ident,
+                        args: <#trait_ident as ::union_fn::UnionFn>::Args::#method_ident( #( #param_bindings ),* ),
                     }
                 }
             )
         });
-        quote_spanned!(span=>
-            impl #ident {
-                #( #handlers )*
+        quote_spanned!(trait_span=>
+            impl #trait_ident {
+                #( #constructors )*
             }
         )
     }
