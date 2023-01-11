@@ -29,9 +29,9 @@ trait Instruction {
     }
 
     /// Divides the top two values.
-    /// 
+    ///
     /// # Errors
-    /// 
+    ///
     /// - If the divisor is equal to zero.
     /// - If the division results in an integer overflow.
     fn i64_div(ctx: &mut Self::Context) -> Self::Output {
