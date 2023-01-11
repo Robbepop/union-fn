@@ -2,13 +2,21 @@
 
 pub use union_fn_macro::union_fn;
 
-/// Implemented by union functions without context.
+/// Allows `#[union_fn]` types with context to be called as functions.
+/// 
+/// # Note
+/// 
+/// This trait automatically implemented by `#[union_fn]` expansions.
 pub trait Call: UnionFn {
     /// Calls the union function.
     fn call(self) -> <Self as UnionFn>::Output;
 }
 
-/// Implemented by union functions with context.
+/// Allows `#[union_fn]` types with context to be called as functions.
+/// 
+/// # Note
+/// 
+/// This trait automatically implemented by `#[union_fn]` expansions.
 pub trait CallWithContext: UnionFn {
     /// The shared execution context.
     type Context;
@@ -17,13 +25,24 @@ pub trait CallWithContext: UnionFn {
     fn call(self, ctx: &mut Self::Context) -> <Self as UnionFn>::Output;
 }
 
-/// Implemented by the `#[union_fn]` enum type for the call optimized conversion.
+/// Allows `#[union_fn]` types to convert to their optimized instance.
+/// 
+/// # Note
+/// 
+/// This trait automatically implemented by `#[union_fn]` expansions.
 pub trait IntoOpt: UnionFn {
     /// Converts the `#[union_fn]` enum to the call optimized type.
     fn into_opt(self) -> <Self as UnionFn>::Opt;
 }
 
-/// Trait implemented by a union function.
+/// Stores information about a `#[union_fn]` macro expansion.
+/// 
+/// This helps to link different generated types together and
+/// allow them to work interconnectedly.
+///
+/// # Note
+/// 
+/// This trait automatically implemented by `#[union_fn]` expansions.
 pub trait UnionFn {
     /// The common output type of all functions in the union function.
     type Output;
