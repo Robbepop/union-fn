@@ -1,6 +1,19 @@
+use heck::AsUpperCamelCase;
 use proc_macro2::{Span, TokenStream as TokenStream2};
-use quote::{quote_spanned, ToTokens};
+use quote::{quote_spanned, ToTokens, format_ident};
 use syn::spanned::Spanned;
+
+/// Extension methods for [`syn::Ident`].
+pub trait IdentExt {
+    /// Converts the identifier to an upper camel case identifier.
+    fn to_upper_camel_case(&self) -> syn::Ident;
+}
+
+impl IdentExt for syn::Ident {
+    fn to_upper_camel_case(&self) -> syn::Ident {
+        format_ident!("{}", AsUpperCamelCase(self.to_string()).to_string())
+    }
+}
 
 /// Turns `args` into a Rust tuple type.
 ///

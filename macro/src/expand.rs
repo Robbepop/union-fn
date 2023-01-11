@@ -2,6 +2,7 @@ use crate::{utils::make_tuple_type, UnionFn};
 use proc_macro2::TokenStream as TokenStream2;
 use quote::{format_ident, quote_spanned};
 use syn::spanned::Spanned as _;
+use crate::utils::IdentExt as _;
 
 impl UnionFn {
     /// Expands the parsed and analyzed [`UnionFn`] to proper Rust code.
@@ -11,6 +12,7 @@ impl UnionFn {
         let args = self.expand_union_args();
         let delegator = self.expand_delegator();
         let handler = self.expand_union_fn();
+        let enum_type = self.expand_union_fn_enum();
         quote_spanned!(span=>
             const _: () = {
                 #reflect
@@ -18,6 +20,7 @@ impl UnionFn {
                 #delegator
             };
             #handler
+            #enum_type
         )
     }
 
@@ -28,6 +31,12 @@ impl UnionFn {
         let output = self.output_type();
         quote_spanned!(span=>
             impl ::union_fn::UnionFn for #ident {
+                type Output = #output;
+                type Args = UnionFnArgs;
+                type Delegator = UnionFnDelegator;
+            }
+
+            impl ::union_fn::UnionFn for UnionFnEnum {
                 type Output = #output;
                 type Args = UnionFnArgs;
                 type Delegator = UnionFnDelegator;
@@ -77,9 +86,10 @@ impl UnionFn {
         )
     }
 
+    /// Expand the `#[union_fn]` type.
     fn expand_union_fn(&self) -> TokenStream2 {
-        let span = self.item.span();
-        let ident = &self.item.ident;
+        let span = self.span();
+        let ident = self.ident();
         let call_impl = self.expand_call_impl();
         let constructors = self.expand_constructors();
         let ctx = self.state.get_context().map(|_| {
@@ -97,6 +107,115 @@ impl UnionFn {
             #call_impl
             #constructors
         )
+    }
+
+    /// Expand the user facing `#[union_fn]` enum type.
+    fn expand_union_fn_enum(&self) -> TokenStream2 {
+        let trait_span = self.span();
+        let trait_ident = self.ident();
+        let variants = self.expand_union_fn_enum_variants();
+        let constructors = self.expand_union_fn_enum_constructors();
+        let conversions = self.expand_union_fn_enum_conversion_arms();
+        let call_impl = self.expand_union_fn_enum_call_impl();
+        quote_spanned!(trait_span=>
+            pub enum UnionFnEnum {
+                #( #variants ),*
+            }
+
+            impl UnionFnEnum {
+                /// Converts the `#[union_fn]` enum to the call optimized type.
+                pub fn into_opt(self) -> #trait_ident {
+                    match self {
+                        #( #conversions )*
+                    }
+                }
+
+                #( #constructors )*
+            }
+
+            #call_impl
+        )
+    }
+
+    /// Expands the enum variants of the user facing `#[union_fn]` enum type.
+    fn expand_union_fn_enum_variants(&self) -> impl Iterator<Item = TokenStream2> + '_ {
+        self.methods().map(|method| {
+            let method_span = method.span();
+            let method_ident = method.ident();
+            let variant_ident = method_ident.to_upper_camel_case();
+            let variant_fields = method.ident_inputs(&self.state);
+            quote_spanned!(method_span=>
+                #variant_ident {
+                    #( #variant_fields ),*
+                }
+            )
+        })
+    }
+
+    /// Expands the enum constructors of the user facing `#[union_fn]` enum type.
+    fn expand_union_fn_enum_constructors(&self) -> impl Iterator<Item = TokenStream2> + '_ {
+        self.methods().map(|method| {
+            let method_span = method.span();
+            let method_ident = method.ident();
+            let method_attrs = method.attrs();
+            let variant_ident = method_ident.to_upper_camel_case();
+            let params = method.ident_inputs(&self.state);
+            let fields = method.input_bindings(&self.state);
+            quote_spanned!(method_span=>
+                #( #method_attrs )*
+                pub fn #method_ident( #( #params ),* ) -> Self {
+                    Self::#variant_ident {
+                        #( #fields ),*
+                    }
+                }
+            )
+        })
+    }
+
+    /// Expands the arms of the conversion to the call optimized type of the user facing `#[union_fn]` enum type.
+    fn expand_union_fn_enum_conversion_arms(&self) -> impl Iterator<Item = TokenStream2> + '_ {
+        let trait_ident = self.ident();
+        self.methods().map(move |method| {
+            let method_span = method.span();
+            let method_ident = method.ident();
+            let variant_ident = method_ident.to_upper_camel_case();
+            let fields = method.input_bindings(&self.state);
+            quote_spanned!(method_span=>
+                Self::#variant_ident {
+                    #( #fields ),*
+                } => {
+                    #trait_ident::#method_ident( #( #fields ),* )
+                }
+            )
+        })
+    }
+
+    /// Expands the trait impl of either `union_fn::Call` or `union_fn::CallWithContext`.
+    fn expand_union_fn_enum_call_impl(&self) -> TokenStream2 {
+        let trait_span = self.span();
+        let trait_ident = self.ident();
+        match self.state.get_context() {
+            Some(context) => {
+                quote_spanned!(trait_span=>
+                    impl ::union_fn::CallWithContext for UnionFnEnum {
+                        type Context = #context;
+
+                        fn call(self, ctx: &mut Self::Context) -> <#trait_ident as ::union_fn::UnionFn>::Output {
+                            <#trait_ident as ::union_fn::CallWithContext>::call(self.into_opt(), ctx)
+                        }
+                    }
+                )
+            }
+            None => {
+                quote_spanned!(trait_span=>
+                    impl ::union_fn::Call for UnionFnEnum {
+                        fn call(self) -> <#trait_ident as ::union_fn::UnionFn>::Output {
+                            <#trait_ident as ::union_fn::Call>::call(self.into_opt())
+                        }
+                    }
+                )
+            }
+        }
     }
 
     /// Expand the `#[union_fn]` constructors.
