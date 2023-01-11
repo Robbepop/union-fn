@@ -3,9 +3,9 @@
 pub use union_fn_macro::union_fn;
 
 /// Allows `#[union_fn]` types with context to be called as functions.
-/// 
+///
 /// # Note
-/// 
+///
 /// This trait automatically implemented by `#[union_fn]` expansions.
 pub trait Call: UnionFn {
     /// Calls the union function.
@@ -13,9 +13,9 @@ pub trait Call: UnionFn {
 }
 
 /// Allows `#[union_fn]` types with context to be called as functions.
-/// 
+///
 /// # Note
-/// 
+///
 /// This trait automatically implemented by `#[union_fn]` expansions.
 pub trait CallWithContext: UnionFn {
     /// The shared execution context.
@@ -26,9 +26,9 @@ pub trait CallWithContext: UnionFn {
 }
 
 /// Allows `#[union_fn]` types to convert to their optimized instance.
-/// 
+///
 /// # Note
-/// 
+///
 /// This trait automatically implemented by `#[union_fn]` expansions.
 pub trait IntoOpt: UnionFn {
     /// Converts the `#[union_fn]` enum to the call optimized type.
@@ -36,12 +36,12 @@ pub trait IntoOpt: UnionFn {
 }
 
 /// Stores information about a `#[union_fn]` macro expansion.
-/// 
+///
 /// This helps to link different generated types together and
 /// allow them to work interconnectedly.
 ///
 /// # Note
-/// 
+///
 /// This trait automatically implemented by `#[union_fn]` expansions.
 pub trait UnionFn {
     /// The common output type of all functions in the union function.
