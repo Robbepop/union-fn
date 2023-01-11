@@ -102,15 +102,27 @@ impl<'a> UnionFnMethod<'a> {
     /// `_N`.
     fn ident_or_numbered(pat: &syn::Pat, n: usize) -> syn::Ident {
         let make_numbered = || format_ident!("_{}", n);
-        if let syn::Pat::Path(pat_path) = pat {
-            if pat_path.qself.is_some() {
-                return make_numbered();
+        match pat {
+            syn::Pat::Ident(pat_ident) => {
+                if pat_ident.subpat.is_some()
+                    || pat_ident.by_ref.is_some()
+                    || pat_ident.mutability.is_some()
+                {
+                    return make_numbered();
+                }
+                return pat_ident.ident.clone();
             }
-            if let Some(ident) = pat_path.path.get_ident() {
-                return ident.clone();
+            syn::Pat::Path(pat_path) => {
+                if pat_path.qself.is_some() {
+                    return make_numbered();
+                }
+                if let Some(ident) = pat_path.path.get_ident() {
+                    return ident.clone();
+                }
+                make_numbered()
             }
+            _ => make_numbered(),
         }
-        make_numbered()
     }
 
     /// Returns the context parameter pattern of the method if any.
