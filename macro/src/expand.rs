@@ -62,6 +62,7 @@ impl UnionFn {
         let impls = self.methods().map(|method| {
             let method_span = method.span();
             let method_ident = method.ident();
+            let method_attrs = method.attrs();
             let impl_block = method.impl_block();
             let ctx_param = method
                 .context(&self.state)
@@ -72,6 +73,7 @@ impl UnionFn {
                 });
             let params = method.inputs(&self.state);
             quote_spanned!(method_span=>
+                #( #method_attrs )*
                 fn #method_ident( #ctx_param #( #params ),* ) -> <#trait_ident as ::union_fn::UnionFn>::Output #impl_block
             )
         });
@@ -92,6 +94,7 @@ impl UnionFn {
         let delegates = self.methods().map(|method| {
             let method_span = method.span();
             let method_ident = method.ident();
+            let method_attrs = method.attrs();
             let ctx_ident = method
                 .context(&self.state)
                 .map(|ctx| quote_spanned!(method_span=> #ctx,));
@@ -105,6 +108,7 @@ impl UnionFn {
             let bindings = method.input_bindings(&self.state);
             let tuple_bindings = make_tuple_type(method_span, &bindings);
             quote_spanned!(method_span=>
+                #( #method_attrs )*
                 fn #method_ident( #ctx_param args: <#trait_ident as ::union_fn::UnionFn>::Args )
                     -> <#trait_ident as ::union_fn::UnionFn>::Output
                 {
@@ -357,10 +361,12 @@ impl UnionFn {
         self.methods().map(|method| {
             let method_span = method.span();
             let method_ident = method.ident();
+            let method_attrs = method.attrs();
             let params = method.ident_inputs(&self.state);
             let param_bindings = method.input_bindings(&self.state);
             let tuple_bindings = make_tuple_type(method_span, param_bindings);
             quote_spanned!(method_span=>
+                #( #method_attrs )*
                 pub fn #method_ident( #( #params ),* ) -> Self {
                     Self { #method_ident: #tuple_bindings }
                 }
