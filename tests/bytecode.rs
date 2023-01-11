@@ -6,17 +6,20 @@ trait Instruction {
     type Context = ExecutionContext;
     type Output = Result<Control, TrapCode>;
 
+    /// Returns a constant value.
     fn constant(ctx: &mut Self::Context, value: u64) -> Self::Output {
         ctx.push(value);
         ctx.next_instr()
     }
 
+    /// Duplicates the value at `depth` on the stack.
     fn dup(ctx: &mut Self::Context, depth: usize) -> Self::Output {
         let dup = ctx.nth(depth)?;
         ctx.push(dup);
         ctx.next_instr()
     }
 
+    /// Adds two `i64` values.
     fn i64_add(ctx: &mut Self::Context) -> Self::Output {
         let rhs = ctx.pop()? as i64;
         let lhs = ctx.pop()? as i64;
@@ -25,6 +28,12 @@ trait Instruction {
         ctx.next_instr()
     }
 
+    /// Divides the top two values.
+    /// 
+    /// # Errors
+    /// 
+    /// - If the divisor is equal to zero.
+    /// - If the division results in an integer overflow.
     fn i64_div(ctx: &mut Self::Context) -> Self::Output {
         let rhs = ctx.pop()? as i64;
         if rhs == 0 {
@@ -39,10 +48,12 @@ trait Instruction {
         ctx.next_instr()
     }
 
+    /// Branches to the new instruction pointer.
     fn goto(ctx: &mut Self::Context, new_ip: usize) -> Self::Output {
         ctx.goto_instr(new_ip)
     }
 
+    /// Returns from the execution.
     fn ret(_ctx: &mut Self::Context) -> Self::Output {
         Ok(Control::Return)
     }
