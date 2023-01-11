@@ -4,15 +4,22 @@ use union_fn::{CallWithContext as _, IntoOpt as _};
 trait Counter {
     type Context = i64;
 
+    /// Bumps the value `by` the amount.
     fn bump_by(value: &mut Self::Context, by: i64) {
         *value += by;
     }
+
+    /// Selects the values in `choices` depending on `value`.
     fn select(value: &mut Self::Context, choices: [i64; 4]) {
         *value = choices.get(*value as usize).copied().unwrap_or(0)
     }
+
+    /// Divides the `value` by 2.
     fn div2(value: &mut Self::Context) {
         *value /= 2;
     }
+
+    /// Resets the `value` to zero.
     fn reset(value: &mut Self::Context) {
         *value = 0;
     }
