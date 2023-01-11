@@ -74,6 +74,60 @@ This proc. macro will expand to roughly the following code:
 (Note, for demonstration purposes whitespace and derive macro expansions have been changed.)
 
 ```rust
+#[derive(Copy, Clone)]
+pub enum Counter {
+    /// Bumps the value `by` the amount.
+    BumpBy { by: i64 },
+    /// Selects the values in `choices` depending on `value`.
+    Select { choices: [i64; 4] },
+    /// Divides the `value` by 2.
+    Div2 {},
+    /// Resets the `value` to zero.
+    Reset {},
+}
+
+impl ::union_fn::IntoOpt for Counter {
+    fn into_opt(self) -> <Counter as ::union_fn::UnionFn>::Opt {
+        match self {
+            Self::BumpBy { by } => <Counter as ::union_fn::UnionFn>::Opt::bump_by(by),
+            Self::Select { choices } => {
+                <Counter as ::union_fn::UnionFn>::Opt::select(choices)
+            }
+            Self::Div2 {} => <Counter as ::union_fn::UnionFn>::Opt::div2(),
+            Self::Reset {} => <Counter as ::union_fn::UnionFn>::Opt::reset(),
+        }
+    }
+}
+
+impl Counter {
+    /// Bumps the value `by` the amount.
+    pub fn bump_by(by: i64) -> Self {
+        Self::BumpBy { by }
+    }
+    /// Selects the values in `choices` depending on `value`.
+    pub fn select(choices: [i64; 4]) -> Self {
+        Self::Select { choices }
+    }
+    /// Divides the `value` by 2.
+    pub fn div2() -> Self {
+        Self::Div2 {}
+    }
+    /// Resets the `value` to zero.
+    pub fn reset() -> Self {
+        Self::Reset {}
+    }
+}
+
+impl ::union_fn::CallWithContext for Counter {
+    type Context = i64;
+    fn call(self, ctx: &mut Self::Context) -> <Counter as ::union_fn::UnionFn>::Output {
+        <<Counter as ::union_fn::UnionFn>::Opt as ::union_fn::CallWithContext>::call(
+            <Counter as ::union_fn::IntoOpt>::into_opt(self),
+            ctx,
+        )
+    }
+}
+
 const _: () = {
     impl ::union_fn::UnionFn for CounterOpt {
         type Output = ();
@@ -256,58 +310,4 @@ const _: () = {
         }
     }
 };
-
-#[derive(Copy, Clone)]
-pub enum Counter {
-    /// Bumps the value `by` the amount.
-    BumpBy { by: i64 },
-    /// Selects the values in `choices` depending on `value`.
-    Select { choices: [i64; 4] },
-    /// Divides the `value` by 2.
-    Div2 {},
-    /// Resets the `value` to zero.
-    Reset {},
-}
-
-impl ::union_fn::IntoOpt for Counter {
-    fn into_opt(self) -> <Counter as ::union_fn::UnionFn>::Opt {
-        match self {
-            Self::BumpBy { by } => <Counter as ::union_fn::UnionFn>::Opt::bump_by(by),
-            Self::Select { choices } => {
-                <Counter as ::union_fn::UnionFn>::Opt::select(choices)
-            }
-            Self::Div2 {} => <Counter as ::union_fn::UnionFn>::Opt::div2(),
-            Self::Reset {} => <Counter as ::union_fn::UnionFn>::Opt::reset(),
-        }
-    }
-}
-
-impl Counter {
-    /// Bumps the value `by` the amount.
-    pub fn bump_by(by: i64) -> Self {
-        Self::BumpBy { by }
-    }
-    /// Selects the values in `choices` depending on `value`.
-    pub fn select(choices: [i64; 4]) -> Self {
-        Self::Select { choices }
-    }
-    /// Divides the `value` by 2.
-    pub fn div2() -> Self {
-        Self::Div2 {}
-    }
-    /// Resets the `value` to zero.
-    pub fn reset() -> Self {
-        Self::Reset {}
-    }
-}
-
-impl ::union_fn::CallWithContext for Counter {
-    type Context = i64;
-    fn call(self, ctx: &mut Self::Context) -> <Counter as ::union_fn::UnionFn>::Output {
-        <<Counter as ::union_fn::UnionFn>::Opt as ::union_fn::CallWithContext>::call(
-            <Counter as ::union_fn::IntoOpt>::into_opt(self),
-            ctx,
-        )
-    }
-}
 ```
