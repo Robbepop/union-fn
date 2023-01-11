@@ -735,6 +735,7 @@ impl UnionFn {
         }
     }
 
+    /// Expands the `#[union_fn]` union arguments type and impls.
     fn expand_union_args(&self) -> TokenStream2 {
         let trait_span = self.span();
         let variants = self.expand_union_args_variants();
