@@ -604,63 +604,34 @@ impl UnionFn {
         )
     }
 
+    /// Expand hidden delegators from `UnionFnArgs` to actual function parameters and implementations.
     fn expand_delegator(&self) -> TokenStream2 {
-        let span = self.item.span();
-        let ident = &self.item.ident;
-        let delegators = self.item.items.iter().filter_map(|item| match item {
-            syn::TraitItem::Method(item) => Some(item),
-            _ => None,
-        }).map(|method| {
-            let span = method.span();
-            let method_ident = &method.sig.ident;
-            let impl_ident = quote::format_ident!("_{}_impl", method_ident);
-            let ctx_ident = self.state.get_context().map(|_| &method.sig.inputs[0]).and_then(|fn_arg| match fn_arg {
-                syn::FnArg::Typed(pat_type) => Some(pat_type),
-                syn::FnArg::Receiver(_) => None,
-            }).map(|pat_type| {
-                let span = pat_type.span();
-                let pat = &pat_type.pat;
-                quote_spanned!(span=>
-                    #pat: &mut <#ident as ::union_fn::CallWithContext>::Context,
-                )
-            });
-            let ctx_param = self.state.get_context().map(|_| {
-                quote_spanned!(span=>
-                    ctx: &mut <#ident as ::union_fn::CallWithContext>::Context,
-                )
-            });
-            let ctx_arg = self.state.get_context().map(|_| {
-                quote_spanned!(span=>
-                    ctx,
-                )
-            });
-            let mut args = method.sig.inputs.iter().filter_map(|arg| match arg {
-                syn::FnArg::Typed(pat_type) => Some(pat_type),
-                syn::FnArg::Receiver(_) => None
-            }).collect::<VecDeque<_>>();
-            if self.state.get_context().is_some() {
-                // Throw away context argument before processing.
-                args.pop_front();
-            }
-            let bindings = (0..args.len()).map(|index| quote::format_ident!("_{}", index)).collect::<Vec<_>>();
-            let args = args.iter().collect::<Vec<_>>();
-            let block = method.default.as_ref().unwrap();
-            let tuple_bindings = make_tuple_type(span, &bindings);
-
-            quote_spanned!(span=>
-                fn #method_ident( #ctx_param args: <#ident as ::union_fn::UnionFn>::Args ) -> <#ident as ::union_fn::UnionFn>::Output {
+        let trait_span = self.span();
+        let trait_ident = self.ident();
+        let delegates = self.methods().map(|method| {
+            let method_span = method.span();
+            let method_ident = method.ident();
+            let impl_ident = format_ident!("_{}_impl", method_ident);
+            let impl_block = method.impl_block();
+            let ctx_ident = method.context(&self.state).map(|ctx| quote_spanned!(method_span=> #ctx,));
+            let ctx_param = method.context(&self.state).map(|ctx| quote_spanned!(method_span=> #ctx: &mut <#trait_ident as ::union_fn::CallWithContext>::Context,));
+            let params = method.inputs(&self.state);
+            let bindings = method.input_bindings(&self.state);
+            let tuple_bindings = make_tuple_type(method_span, &bindings);
+            quote_spanned!(method_span=>
+                fn #method_ident( #ctx_param args: <#trait_ident as ::union_fn::UnionFn>::Args ) -> <#trait_ident as ::union_fn::UnionFn>::Output {
                     let #tuple_bindings = unsafe { args.#method_ident };
-                    Self::#impl_ident( #ctx_arg #( #bindings ),* )
+                    Self::#impl_ident( #ctx_ident #( #bindings ),* )
                 }
 
-                fn #impl_ident( #ctx_ident #( #args ),* ) -> <#ident as ::union_fn::UnionFn>::Output #block
+                fn #impl_ident( #ctx_param #( #params ),* ) -> <#trait_ident as ::union_fn::UnionFn>::Output #impl_block
             )
         });
-        quote_spanned!(span=>
+        quote_spanned!(trait_span=>
             pub enum UnionFnDelegator {}
 
             impl UnionFnDelegator {
-                #( #delegators )*
+                #( #delegates )*
             }
         )
     }
@@ -807,14 +778,14 @@ impl UnionFn {
                 }
                 let constructor_args = args.iter().enumerate().map(|(n, arg)| {
                     let span = arg.span();
-                    let binding = quote::format_ident!("_{}", n);
+                    let binding = format_ident!("_{}", n);
                     let ty = &arg.ty;
                     quote_spanned!(span=>
                         #binding: #ty
                     )
                 });
                 let bindings = (0..args.len())
-                    .map(|index| quote::format_ident!("_{}", index))
+                    .map(|index| format_ident!("_{}", index))
                     .collect::<Vec<_>>();
                 let constructor_params = make_tuple_type(span, bindings);
                 quote_spanned!(span=>
