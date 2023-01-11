@@ -3,21 +3,17 @@ use proc_macro2::{Span, TokenStream as TokenStream2};
 use quote::{format_ident, quote_spanned, ToTokens};
 use syn::spanned::Spanned;
 
-/// Extension methods for [`syn::Attribute`].
+/// Extension methods for [`struct@syn::Attribute`].
 pub trait AttributeExt {
-    /// Returns `true` if the [`Attribute`] is a Rust documentation attribute.
-    ///
-    /// [`Attribute`]: [`syn::Attribute`]
+    /// Returns `true` if the [`struct@syn::Attribute`] is a Rust documentation attribute.
     fn is_docs_attribute(&self) -> bool;
 
-    /// Returns `Some` if the [`Attribute`] is a Rust doc attribute.
-    ///
-    /// [`Attribute`]: [`syn::Attribute`]
+    /// Returns `Some` if the [`struct@syn::Attribute`] is a Rust doc attribute.
     fn filter_docs(&self) -> Option<&syn::Attribute>;
 
-    /// Returns the contents of the [`Attribute`] if it is a Rust doc attribute
+    /// Returns the contents of the [`struct@syn::Attribute`] if it is a Rust doc attribute
     ///
-    /// Otherwise returns `None`.
+    /// Returns `None` otherwise.
     fn get_docs(&self) -> Option<syn::LitStr>;
 }
 
@@ -45,7 +41,7 @@ impl AttributeExt for syn::Attribute {
     }
 }
 
-/// Extension methods for [`syn::Ident`].
+/// Extension methods for [`struct@syn::Ident`].
 pub trait IdentExt {
     /// Converts the identifier to an upper camel case identifier.
     fn to_upper_camel_case(&self) -> syn::Ident;
