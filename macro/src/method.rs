@@ -110,7 +110,7 @@ impl<'a> UnionFnMethod<'a> {
                 {
                     return make_numbered();
                 }
-                return pat_ident.ident.clone();
+                pat_ident.ident.clone()
             }
             syn::Pat::Path(pat_path) => {
                 if pat_path.qself.is_some() {
