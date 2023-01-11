@@ -28,6 +28,11 @@ impl<'a> UnionFnMethod<'a> {
         &self.item.sig.ident
     }
 
+    /// Returns the attributes of the method.
+    pub fn attrs(&self) -> &[syn::Attribute] {
+        &self.item.attrs
+    }
+
     /// Returns the inputs of the method without the context parameter.
     ///
     /// This returns the inputs exactly as they are found in the proc macro invocation.

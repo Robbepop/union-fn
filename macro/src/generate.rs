@@ -567,9 +567,11 @@ impl UnionFn {
         let constructors = self.methods().map(|method| {
             let method_span = method.span();
             let method_ident = method.ident();
+            let method_attrs = method.attrs();
             let params = method.ident_inputs(&self.state);
             let param_bindings = method.input_bindings(&self.state);
             quote_spanned!(method_span=>
+                #( #method_attrs )*
                 pub fn #method_ident( #( #params ),* ) -> Self {
                     Self {
                         handler: <#trait_ident as ::union_fn::UnionFn>::Delegator::#method_ident,
