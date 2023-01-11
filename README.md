@@ -34,11 +34,6 @@ trait Counter {
         *value = choices.get(*value as usize).copied().unwrap_or(0)
     }
 
-    /// Divides the `value` by 2.
-    fn div2(value: &mut Self::Context) {
-        *value /= 2;
-    }
-
     /// Resets the `value` to zero.
     fn reset(value: &mut Self::Context) {
         *value = 0;
@@ -53,9 +48,6 @@ fn main() {
 
     Counter::bump_by(41).call(&mut value);
     assert_eq!(value, 42);
-
-    Counter::div2().call(&mut value);
-    assert_eq!(value, 21);
 
     Counter::reset().call(&mut value);
     assert_eq!(value, 0);
@@ -80,8 +72,6 @@ pub enum Counter {
     BumpBy { by: i64 },
     /// Selects the values in `choices` depending on `value`.
     Select { choices: [i64; 4] },
-    /// Divides the `value` by 2.
-    Div2 {},
     /// Resets the `value` to zero.
     Reset {},
 }
@@ -93,7 +83,6 @@ impl ::union_fn::IntoOpt for Counter {
             Self::Select { choices } => {
                 <Counter as ::union_fn::UnionFn>::Opt::select(choices)
             }
-            Self::Div2 {} => <Counter as ::union_fn::UnionFn>::Opt::div2(),
             Self::Reset {} => <Counter as ::union_fn::UnionFn>::Opt::reset(),
         }
     }
@@ -107,10 +96,6 @@ impl Counter {
     /// Selects the values in `choices` depending on `value`.
     pub fn select(choices: [i64; 4]) -> Self {
         Self::Select { choices }
-    }
-    /// Divides the `value` by 2.
-    pub fn div2() -> Self {
-        Self::Div2 {}
     }
     /// Resets the `value` to zero.
     pub fn reset() -> Self {
@@ -152,8 +137,6 @@ const _: () = {
         bump_by: i64,
         /// Selects the values in `choices` depending on `value`.
         select: [i64; 4],
-        /// Divides the `value` by 2.
-        div2: (),
         /// Resets the `value` to zero.
         reset: (),
     }
@@ -167,11 +150,6 @@ const _: () = {
         /// Selects the values in `choices` depending on `value`.
         pub fn select(choices: [i64; 4]) -> Self {
             Self { select: choices }
-        }
-
-        /// Divides the `value` by 2.
-        pub fn div2() -> Self {
-            Self { div2: () }
         }
 
         /// Resets the `value` to zero.
@@ -202,15 +180,6 @@ const _: () = {
             <Counter as ::union_fn::UnionFn>::Impls::select(value, choices)
         }
 
-        /// Divides the `value` by 2.
-        fn div2(
-            value: &mut <Counter as ::union_fn::CallWithContext>::Context,
-            args: <Counter as ::union_fn::UnionFn>::Args,
-        ) -> <Counter as ::union_fn::UnionFn>::Output {
-            let () = unsafe { args.div2 };
-            <Counter as ::union_fn::UnionFn>::Impls::div2(value)
-        }
-    
         /// Resets the `value` to zero.
         fn reset(
             value: &mut <Counter as ::union_fn::CallWithContext>::Context,
@@ -239,13 +208,6 @@ const _: () = {
             choices: [i64; 4],
         ) -> <Counter as ::union_fn::UnionFn>::Output {
             *value = choices.get(*value as usize).copied().unwrap_or(0);
-        }
-
-        /// Divides the `value` by 2.
-        fn div2(
-            value: &mut <Counter as ::union_fn::CallWithContext>::Context,
-        ) -> <Counter as ::union_fn::UnionFn>::Output {
-            *value /= 2;
         }
 
         /// Resets the `value` to zero.
@@ -290,14 +252,6 @@ const _: () = {
             Self {
                 handler: <Counter as ::union_fn::UnionFn>::Delegator::select,
                 args: <Counter as ::union_fn::UnionFn>::Args::select(choices),
-            }
-        }
-
-        /// Divides the `value` by 2.
-        pub fn div2() -> Self {
-            Self {
-                handler: <Counter as ::union_fn::UnionFn>::Delegator::div2,
-                args: <Counter as ::union_fn::UnionFn>::Args::div2(),
             }
         }
 
