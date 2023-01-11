@@ -394,6 +394,11 @@ impl UnionFn {
         Ok(())
     }
 
+    /// Analyzes the given trait `item` and updates the `state` respectively.
+    ///
+    /// # Errors
+    ///
+    /// If the `item` is unsupported or invalid.
     fn analyze_item(state: &mut UnionFnState, item: &syn::TraitItem) -> Result<()> {
         macro_rules! unsupported {
             ($spanned:ident) => {{
@@ -430,6 +435,7 @@ impl UnionFn {
         )
     }
 
+    /// Exapnds the code to implement the base `UnionFn` trait.
     fn expand_reflection(&self) -> TokenStream2 {
         let span = self.item.span();
         let ident = &self.item.ident;
