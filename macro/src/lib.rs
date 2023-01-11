@@ -45,6 +45,11 @@ impl UnionFn {
         format_ident!("{}Args", self.ident())
     }
 
+    /// Returns the identifier for the impls `#[union_fn]` type.
+    pub fn ident_impls(&self) -> syn::Ident {
+        format_ident!("{}Impls", self.ident())
+    }
+
     /// Returns the identifier for the delegate `#[union_fn]` type.
     pub fn ident_delegate(&self) -> syn::Ident {
         format_ident!("{}Delegate", self.ident())

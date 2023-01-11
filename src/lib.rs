@@ -29,6 +29,8 @@ pub trait UnionFn {
     type Opt;
     /// Type responsible to hold call optimized parameters.
     type Args;
+    /// Type responsible to implement calls for the `#[union_fn]` type.
+    type Impls;
     /// Type responsible to delegate optimized calls for the call optimized `#[union_fn]` type.
     type Delegator;
 }

@@ -1,7 +1,7 @@
 use crate::utils::IdentExt as _;
 use crate::{utils::make_tuple_type, UnionFn};
 use proc_macro2::TokenStream as TokenStream2;
-use quote::{format_ident, quote_spanned};
+use quote::quote_spanned;
 use syn::spanned::Spanned as _;
 
 impl UnionFn {
@@ -11,6 +11,7 @@ impl UnionFn {
         let reflect = self.expand_reflection();
         let args_type = self.expand_union_fn_args();
         let delegate_type = self.expand_union_fn_delegate();
+        let impls_type = self.expand_union_fn_impls();
         let opt_type = self.expand_union_fn_opt();
         let enum_type = self.expand_union_fn_enum();
         quote_spanned!(span=>
@@ -18,6 +19,7 @@ impl UnionFn {
                 #reflect
                 #args_type
                 #delegate_type
+                #impls_type
                 #opt_type
             };
             #enum_type
@@ -30,6 +32,7 @@ impl UnionFn {
         let trait_ident = self.ident();
         let ident_opt = self.ident_opt();
         let ident_args = self.ident_args();
+        let ident_impls = self.ident_impls();
         let ident_delegate = self.ident_delegate();
         let output = self.output_type();
         quote_spanned!(trait_span=>
@@ -37,6 +40,7 @@ impl UnionFn {
                 type Output = #output;
                 type Opt = Self;
                 type Args = #ident_args;
+                type Impls = #ident_impls;
                 type Delegator = #ident_delegate;
             }
 
@@ -44,7 +48,38 @@ impl UnionFn {
                 type Output = #output;
                 type Opt = #ident_opt;
                 type Args = #ident_args;
+                type Impls = #ident_impls;
                 type Delegator = #ident_delegate;
+            }
+        )
+    }
+
+    /// Expand hidden delegators from `UnionFnArgs` to actual function parameters and implementations.
+    fn expand_union_fn_impls(&self) -> TokenStream2 {
+        let trait_span = self.span();
+        let trait_ident = self.ident();
+        let ident_impls = self.ident_impls();
+        let impls = self.methods().map(|method| {
+            let method_span = method.span();
+            let method_ident = method.ident();
+            let impl_block = method.impl_block();
+            let ctx_param = method
+                .context(&self.state)
+                .map(|ctx| {
+                    quote_spanned!(
+                        method_span=> #ctx: &mut <#trait_ident as ::union_fn::CallWithContext>::Context,
+                    )
+                });
+            let params = method.inputs(&self.state);
+            quote_spanned!(method_span=>
+                fn #method_ident( #ctx_param #( #params ),* ) -> <#trait_ident as ::union_fn::UnionFn>::Output #impl_block
+            )
+        });
+        quote_spanned!(trait_span=>
+            pub enum #ident_impls {}
+
+            impl #ident_impls {
+                #( #impls )*
             }
         )
     }
@@ -57,8 +92,6 @@ impl UnionFn {
         let delegates = self.methods().map(|method| {
             let method_span = method.span();
             let method_ident = method.ident();
-            let impl_ident = format_ident!("_{}_impl", method_ident);
-            let impl_block = method.impl_block();
             let ctx_ident = method
                 .context(&self.state)
                 .map(|ctx| quote_spanned!(method_span=> #ctx,));
@@ -69,7 +102,6 @@ impl UnionFn {
                         method_span=> #ctx: &mut <#trait_ident as ::union_fn::CallWithContext>::Context,
                     )
                 });
-            let params = method.inputs(&self.state);
             let bindings = method.input_bindings(&self.state);
             let tuple_bindings = make_tuple_type(method_span, &bindings);
             quote_spanned!(method_span=>
@@ -77,10 +109,8 @@ impl UnionFn {
                     -> <#trait_ident as ::union_fn::UnionFn>::Output
                 {
                     let #tuple_bindings = unsafe { args.#method_ident };
-                    Self::#impl_ident( #ctx_ident #( #bindings ),* )
+                    <#trait_ident as ::union_fn::UnionFn>::Impls::#method_ident( #ctx_ident #( #bindings ),* )
                 }
-
-                fn #impl_ident( #ctx_param #( #params ),* ) -> <#trait_ident as ::union_fn::UnionFn>::Output #impl_block
             )
         });
         quote_spanned!(trait_span=>
