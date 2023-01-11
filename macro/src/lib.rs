@@ -1,4 +1,4 @@
-use generate::UnionFnState;
+use analyse::UnionFnState;
 use method::UnionFnMethod;
 use proc_macro::TokenStream;
 use proc_macro2::Span;
@@ -6,14 +6,14 @@ use syn::spanned::Spanned;
 
 #[macro_use]
 mod error;
+mod analyse;
 mod expand;
-mod generate;
 mod method;
 mod utils;
 
 #[proc_macro_attribute]
 pub fn union_fn(attr: TokenStream, item: TokenStream) -> TokenStream {
-    generate::union_fn(attr.into(), item.into()).into()
+    analyse::union_fn(attr.into(), item.into()).into()
 }
 
 struct UnionFn {

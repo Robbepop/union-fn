@@ -1,4 +1,4 @@
-use crate::generate::UnionFnState;
+use crate::analyse::UnionFnState;
 use proc_macro2::Span;
 use quote::format_ident;
 use syn::spanned::Spanned as _;
