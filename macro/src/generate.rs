@@ -1,7 +1,6 @@
 use crate::{error::ExtError, utils::make_tuple_type};
 use proc_macro2::{Span, TokenStream as TokenStream2};
 use quote::{format_ident, quote_spanned, ToTokens};
-use std::collections::VecDeque;
 use syn::{spanned::Spanned, Result};
 
 pub fn union_fn(args: TokenStream2, item: TokenStream2) -> TokenStream2 {
@@ -585,7 +584,7 @@ impl UnionFn {
     pub fn expand(&self) -> TokenStream2 {
         let span = self.item.span();
         let reflect = self.expand_reflection();
-        let args = self.expand_args();
+        let args = self.expand_union_args();
         let delegator = self.expand_delegator();
         let handler = self.expand_union_fn();
         quote_spanned!(span=>
@@ -736,73 +735,11 @@ impl UnionFn {
         }
     }
 
-    fn expand_args(&self) -> TokenStream2 {
-        let variants = self
-            .item
-            .items
-            .iter()
-            .filter_map(|item| match item {
-                syn::TraitItem::Method(item) => Some(item),
-                _ => None,
-            })
-            .map(|method| {
-                let ident = &method.sig.ident;
-                let mut arg_types = method.sig.inputs.iter().filter_map(|arg| match arg {
-                    syn::FnArg::Typed(pat_type) => Some(&pat_type.ty),
-                    syn::FnArg::Receiver(_) => None,
-                });
-                if self.state.get_context().is_some() {
-                    // Throw away context argument before processing.
-                    let _ = arg_types.next();
-                }
-                let inputs = make_tuple_type(method.span(), arg_types);
-                quote_spanned!(method.span() =>
-                    #ident: #inputs
-                )
-            });
-        let constructors = self
-            .item
-            .items
-            .iter()
-            .filter_map(|item| match item {
-                syn::TraitItem::Method(item) => Some(item),
-                _ => None,
-            })
-            .map(|method| {
-                let span = method.span();
-                let method_ident = &method.sig.ident;
-                let mut args = method
-                    .sig
-                    .inputs
-                    .iter()
-                    .filter_map(|arg| match arg {
-                        syn::FnArg::Typed(pat_type) => Some(pat_type),
-                        syn::FnArg::Receiver(_) => None,
-                    })
-                    .collect::<VecDeque<_>>();
-                if self.state.get_context().is_some() {
-                    // Throw away context argument before processing.
-                    args.pop_front();
-                }
-                let constructor_args = args.iter().enumerate().map(|(n, arg)| {
-                    let span = arg.span();
-                    let binding = format_ident!("_{}", n);
-                    let ty = &arg.ty;
-                    quote_spanned!(span=>
-                        #binding: #ty
-                    )
-                });
-                let bindings = (0..args.len())
-                    .map(|index| format_ident!("_{}", index))
-                    .collect::<Vec<_>>();
-                let constructor_params = make_tuple_type(span, bindings);
-                quote_spanned!(span=>
-                    pub fn #method_ident( #( #constructor_args ),* ) -> Self {
-                        Self { #method_ident: #constructor_params }
-                    }
-                )
-            });
-        quote_spanned!(self.item.span() =>
+    fn expand_union_args(&self) -> TokenStream2 {
+        let trait_span = self.span();
+        let variants = self.expand_union_args_variants();
+        let constructors = self.expand_union_args_constructors();
+        quote_spanned!(trait_span =>
             #[derive(core::marker::Copy, core::clone::Clone)]
             pub union UnionFnArgs {
                 #( #variants ),*
@@ -812,5 +749,34 @@ impl UnionFn {
                 #( #constructors )*
             }
         )
+    }
+
+    /// Expands the `#[union_fn]` union variants.
+    fn expand_union_args_variants(&self) -> impl Iterator<Item = TokenStream2> + '_ {
+        self.methods().map(|method| {
+            let method_span = method.span();
+            let method_ident = method.ident();
+            let params = method.input_types(&self.state);
+            let tuple_params = make_tuple_type(method_span, &params);
+            quote_spanned!(method_span =>
+                #method_ident: #tuple_params
+            )
+        })
+    }
+
+    /// Expands the `#[union_fn]` union variant constructors.
+    fn expand_union_args_constructors(&self) -> impl Iterator<Item = TokenStream2> + '_ {
+        self.methods().map(|method| {
+            let method_span = method.span();
+            let method_ident = method.ident();
+            let params = method.ident_inputs(&self.state);
+            let param_bindings = method.input_bindings(&self.state);
+            let tuple_bindings = make_tuple_type(method_span, &param_bindings);
+            quote_spanned!(method_span=>
+                pub fn #method_ident( #( #params ),* ) -> Self {
+                    Self { #method_ident: #tuple_bindings }
+                }
+            )
+        })
     }
 }
