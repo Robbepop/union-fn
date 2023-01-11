@@ -638,13 +638,23 @@ impl UnionFn {
             let method_ident = method.ident();
             let impl_ident = format_ident!("_{}_impl", method_ident);
             let impl_block = method.impl_block();
-            let ctx_ident = method.context(&self.state).map(|ctx| quote_spanned!(method_span=> #ctx,));
-            let ctx_param = method.context(&self.state).map(|ctx| quote_spanned!(method_span=> #ctx: &mut <#trait_ident as ::union_fn::CallWithContext>::Context,));
+            let ctx_ident = method
+                .context(&self.state)
+                .map(|ctx| quote_spanned!(method_span=> #ctx,));
+            let ctx_param = method
+                .context(&self.state)
+                .map(|ctx| {
+                    quote_spanned!(
+                        method_span=> #ctx: &mut <#trait_ident as ::union_fn::CallWithContext>::Context,
+                    )
+                });
             let params = method.inputs(&self.state);
             let bindings = method.input_bindings(&self.state);
             let tuple_bindings = make_tuple_type(method_span, &bindings);
             quote_spanned!(method_span=>
-                fn #method_ident( #ctx_param args: <#trait_ident as ::union_fn::UnionFn>::Args ) -> <#trait_ident as ::union_fn::UnionFn>::Output {
+                fn #method_ident( #ctx_param args: <#trait_ident as ::union_fn::UnionFn>::Args )
+                    -> <#trait_ident as ::union_fn::UnionFn>::Output
+                {
                     let #tuple_bindings = unsafe { args.#method_ident };
                     Self::#impl_ident( #ctx_ident #( #bindings ),* )
                 }
