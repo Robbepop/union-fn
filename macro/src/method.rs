@@ -36,7 +36,7 @@ impl<'a> UnionFnMethod<'a> {
     /// Returns the inputs of the method without the context parameter.
     ///
     /// This returns the inputs exactly as they are found in the proc macro invocation.
-    pub fn inputs(&self, state: &UnionFnState) -> Vec<&syn::PatType> {
+    pub fn inputs(&self, state: &UnionFnState) -> impl Iterator<Item = &syn::PatType> + '_ {
         let mut iter = self.item.sig.inputs.iter().filter_map(|item| match item {
             syn::FnArg::Receiver(receiver) => {
                 panic!("encountered invalid self receiver: {receiver:?}")
@@ -47,13 +47,12 @@ impl<'a> UnionFnMethod<'a> {
             // If the trait has a context we need to pop the context argument.
             let _ = iter.next();
         }
-        iter.collect()
+        iter
     }
 
     /// Returns the input types of the method without the context parameter.
     pub fn input_types(&self, state: &UnionFnState) -> Vec<&syn::Type> {
         self.inputs(state)
-            .iter()
             .map(|pat_type| &*pat_type.ty)
             .collect()
     }
@@ -67,7 +66,6 @@ impl<'a> UnionFnMethod<'a> {
     /// for some proc. macro expansions.
     pub fn input_bindings(&self, state: &UnionFnState) -> Vec<syn::Ident> {
         self.inputs(state)
-            .into_iter()
             .enumerate()
             .map(|(n, pat_type)| Self::ident_or_numbered(&pat_type.pat, n))
             .collect()
@@ -82,7 +80,6 @@ impl<'a> UnionFnMethod<'a> {
     /// for some proc. macro expansions.
     pub fn ident_inputs(&self, state: &UnionFnState) -> Vec<syn::PatType> {
         self.inputs(state)
-            .into_iter()
             .enumerate()
             .map(|(n, pat_type)| {
                 let ident = Self::ident_or_numbered(&pat_type.pat, n);
