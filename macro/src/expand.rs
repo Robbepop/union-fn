@@ -38,7 +38,6 @@ impl UnionFn {
         quote_spanned!(trait_span=>
             impl ::union_fn::UnionFn for #ident_opt {
                 type Output = #output;
-                type Opt = Self;
                 type Args = #ident_args;
                 type Impls = #ident_impls;
                 type Delegator = #ident_delegate;
@@ -46,7 +45,6 @@ impl UnionFn {
 
             impl ::union_fn::UnionFn for #trait_ident {
                 type Output = #output;
-                type Opt = #ident_opt;
                 type Args = #ident_args;
                 type Impls = #ident_impls;
                 type Delegator = #ident_delegate;
@@ -138,6 +136,7 @@ impl UnionFn {
         let opt_docs = format!("Call optimized structure of the [`{trait_ident}`] type.");
         let call_impl = self.expand_call_impl();
         let constructors = self.expand_constructors();
+        let conversions = self.expand_union_fn_opt_into_opt_arms();
         let ctx = self.state.get_context().map(|_| {
             quote_spanned!(span=>
                 ctx: &mut <#trait_ident as ::union_fn::CallWithContext>::Context,
@@ -151,9 +150,37 @@ impl UnionFn {
                 args: <#trait_ident as ::union_fn::UnionFn>::Args,
             }
 
+            impl ::union_fn::IntoOpt for #trait_ident {
+                type Opt = #ident_opt;
+
+                fn into_opt(self) -> Self::Opt {
+                    match self {
+                        #( #conversions )*
+                    }
+                }
+            }
+
             #call_impl
             #constructors
         )
+    }
+
+    /// Expands the arms of the conversion to the call optimized type of the user facing `#[union_fn]` enum type.
+    fn expand_union_fn_opt_into_opt_arms(&self) -> impl Iterator<Item = TokenStream2> + '_ {
+        let trait_ident = self.ident();
+        self.methods().map(move |method| {
+            let method_span = method.span();
+            let method_ident = method.ident();
+            let variant_ident = method_ident.to_upper_camel_case();
+            let fields = method.input_bindings(&self.state);
+            quote_spanned!(method_span=>
+                Self::#variant_ident {
+                    #( #fields ),*
+                } => {
+                    <#trait_ident as ::union_fn::IntoOpt>::Opt::#method_ident( #( #fields ),* )
+                }
+            )
+        })
     }
 
     /// Expand the user facing `#[union_fn]` enum type.
@@ -162,20 +189,11 @@ impl UnionFn {
         let trait_ident = self.ident();
         let variants = self.expand_union_fn_enum_variants();
         let constructors = self.expand_union_fn_enum_constructors();
-        let conversions = self.expand_union_fn_enum_conversion_arms();
         let call_impl = self.expand_union_fn_enum_call_impl();
         quote_spanned!(trait_span=>
             #[derive(::core::marker::Copy, ::core::clone::Clone)]
             pub enum #trait_ident {
                 #( #variants ),*
-            }
-
-            impl ::union_fn::IntoOpt for #trait_ident {
-                fn into_opt(self) -> <#trait_ident as ::union_fn::UnionFn>::Opt {
-                    match self {
-                        #( #conversions )*
-                    }
-                }
             }
 
             impl #trait_ident {
@@ -223,24 +241,6 @@ impl UnionFn {
         })
     }
 
-    /// Expands the arms of the conversion to the call optimized type of the user facing `#[union_fn]` enum type.
-    fn expand_union_fn_enum_conversion_arms(&self) -> impl Iterator<Item = TokenStream2> + '_ {
-        let trait_ident = self.ident();
-        self.methods().map(move |method| {
-            let method_span = method.span();
-            let method_ident = method.ident();
-            let variant_ident = method_ident.to_upper_camel_case();
-            let fields = method.input_bindings(&self.state);
-            quote_spanned!(method_span=>
-                Self::#variant_ident {
-                    #( #fields ),*
-                } => {
-                    <#trait_ident as ::union_fn::UnionFn>::Opt::#method_ident( #( #fields ),* )
-                }
-            )
-        })
-    }
-
     /// Expands the trait impl of either `union_fn::Call` or `union_fn::CallWithContext`.
     fn expand_union_fn_enum_call_impl(&self) -> TokenStream2 {
         let trait_span = self.span();
@@ -252,7 +252,7 @@ impl UnionFn {
                         type Context = #context;
 
                         fn call(self, ctx: &mut Self::Context) -> <#trait_ident as ::union_fn::UnionFn>::Output {
-                            <<#trait_ident as ::union_fn::UnionFn>::Opt
+                            <<#trait_ident as ::union_fn::IntoOpt>::Opt
                                 as ::union_fn::CallWithContext>::call(
                                     <#trait_ident as ::union_fn::IntoOpt>::into_opt(self),
                                     ctx,
@@ -265,7 +265,7 @@ impl UnionFn {
                 quote_spanned!(trait_span=>
                     impl ::union_fn::Call for #trait_ident {
                         fn call(self) -> <#trait_ident as ::union_fn::UnionFn>::Output {
-                            <<#trait_ident as ::union_fn::UnionFn>::Opt
+                            <<#trait_ident as ::union_fn::IntoOpt>::Opt
                                 as ::union_fn::Call>::call(
                                     <#trait_ident as ::union_fn::IntoOpt>::into_opt(self)
                                 )

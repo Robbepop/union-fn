@@ -30,9 +30,12 @@ pub trait CallWithContext: UnionFn {
 /// # Note
 ///
 /// This trait automatically implemented by `#[union_fn]` expansions.
-pub trait IntoOpt: UnionFn {
+pub trait IntoOpt {
+    /// The call optimized `#[union_fn]` type.
+    type Opt;
+
     /// Converts the `#[union_fn]` enum to the call optimized type.
-    fn into_opt(self) -> <Self as UnionFn>::Opt;
+    fn into_opt(self) -> Self::Opt;
 }
 
 /// Stores information about a `#[union_fn]` macro expansion.
@@ -46,8 +49,6 @@ pub trait IntoOpt: UnionFn {
 pub trait UnionFn {
     /// The common output type of all functions in the union function.
     type Output;
-    /// The call optimized `#[union_fn]` type.
-    type Opt;
     /// Type responsible to hold call optimized parameters.
     type Args;
     /// Type responsible to implement calls for the `#[union_fn]` type.

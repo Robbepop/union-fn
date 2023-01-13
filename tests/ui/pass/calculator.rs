@@ -1,4 +1,4 @@
-use union_fn::{CallWithContext as _, IntoOpt as _, UnionFn};
+use union_fn::{CallWithContext as _, IntoOpt};
 
 /// Instructions for a basic stack-based calculator.
 #[union_fn::union_fn]
@@ -68,7 +68,7 @@ pub enum ErrorCode {
 }
 
 /// Call-optimzied instruction type.
-pub type InstrOpt = <Instr as UnionFn>::Opt;
+pub type InstrOpt = <Instr as IntoOpt>::Opt;
 
 /// The state of the calculator.
 pub struct Calculator {
