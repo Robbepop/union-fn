@@ -14,11 +14,6 @@ trait Counter {
         *value = choices.get(*value as usize).copied().unwrap_or(0)
     }
 
-    /// Divides the `value` by 2.
-    fn div2(value: &mut Self::Context) {
-        *value /= 2;
-    }
-
     /// Resets the `value` to zero.
     fn reset(value: &mut Self::Context) {
         *value = 0;
@@ -33,9 +28,6 @@ fn main() {
 
     Counter::bump_by(41).call(&mut value);
     assert_eq!(value, 42);
-
-    Counter::div2().call(&mut value);
-    assert_eq!(value, 21);
 
     Counter::reset().call(&mut value);
     assert_eq!(value, 0);
