@@ -2,16 +2,33 @@
 
 This crate provides a procedural macro `#[union_fn]` that can be applied to Rust `trait` definitions.
 
-The macro generates quite a few things which are of interest primarily (but not exclusively) to efficient
-interpreters that have a high runtime overhead due to their instruction dispatch.
+A `#[union_fn]` can be thought of as a set of polymorphic, parameterized functions
+that are optimized for data locality and polymorphic calls.
 
-Interpreters usually use a `switch-loop` based instruction dispatch and a simple `enum` to represent
-the different kinds of instructions. The problem is that every instruction dispatch incurs lots of overhead
-simply by selecting and calling the handler of the instruction.
+## Motivation & Idea
 
-This crate solves one indirection by using a data structure which we call a `union-fn`, however
-it could have also been called "inline closure" etc. It simply packs the function pointer next
-to the `union`-packed data. This optimizes data locality and removes the need for a jump table.
+Interpreters usually use a `switch-loop` based instruction dispatch where a simple `enum` represents
+all kinds of different instructions such as `Add` and `Branch`.
+Instruction dispatch occurs in between instruction execution and has a lot of overhead when using
+this form of dispatch via branch table which often is not optimized ideally.
+
+The `#[union_fn]` macro decreases the dispatch costs down to the minimal by embedding the function
+pointer to the instruction handling instruction directly into the type next to its function parameters.
+This way there is no need for a branch table and a call dispatch is equal to an indirect function call.
+
+## Codegen
+
+The `#[union_fn]` macro primarily generates 2 different types:
+
+- An enum representation of all trait methods referred to by the trait's identifier.
+    - Useful to inspect, debug and create the different calls.
+    - Accessed via the trait's identifier, e.g. `Foo`.
+    - Each method generates a constructor with the same name and arguments.
+- A type optimized for data locality and polymorphic calls.
+    - Primarily used for actual calling during the compute phase.
+    - Accessed via `<Foo as union_fn::UnionFn>::Opt>` where `Foo` is the trait's identifier.
+    - Each method generates a constructor with the same name and arguments OR;
+      it is possible to convert from the `enum` representation via the `union_fn::IntoOpt` trait.
 
 ## Example
 
