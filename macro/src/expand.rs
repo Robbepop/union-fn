@@ -15,14 +15,14 @@ impl UnionFn {
         let opt_type = self.expand_union_fn_opt();
         let enum_type = self.expand_union_fn_enum();
         quote_spanned!(span=>
+            #enum_type
             const _: () = {
-                #reflect
+                #opt_type
                 #args_type
+                #reflect
                 #delegate_type
                 #impls_type
-                #opt_type
             };
-            #enum_type
         )
     }
 
