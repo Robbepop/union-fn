@@ -33,6 +33,10 @@ pub trait CallWithContext: UnionFn {
 pub trait IntoOpt {
     /// The call optimized `#[union_fn]` type.
     type Opt;
+    /// Type responsible to implement calls for the `#[union_fn]` type.
+    type Impls;
+    /// Type responsible to delegate optimized calls for the call optimized `#[union_fn]` type.
+    type Delegator;
 
     /// Converts the `#[union_fn]` enum to the call optimized type.
     fn into_opt(self) -> Self::Opt;
@@ -51,8 +55,4 @@ pub trait UnionFn {
     type Output;
     /// Type responsible to hold call optimized parameters.
     type Args;
-    /// Type responsible to implement calls for the `#[union_fn]` type.
-    type Impls;
-    /// Type responsible to delegate optimized calls for the call optimized `#[union_fn]` type.
-    type Delegator;
 }

@@ -32,22 +32,16 @@ impl UnionFn {
         let trait_ident = self.ident();
         let ident_opt = self.ident_opt();
         let ident_args = self.ident_args();
-        let ident_impls = self.ident_impls();
-        let ident_delegate = self.ident_delegate();
         let output = self.output_type();
         quote_spanned!(trait_span=>
             impl ::union_fn::UnionFn for #ident_opt {
                 type Output = #output;
                 type Args = #ident_args;
-                type Impls = #ident_impls;
-                type Delegator = #ident_delegate;
             }
 
             impl ::union_fn::UnionFn for #trait_ident {
                 type Output = #output;
                 type Args = #ident_args;
-                type Impls = #ident_impls;
-                type Delegator = #ident_delegate;
             }
         )
     }
@@ -114,7 +108,7 @@ impl UnionFn {
                     -> <#trait_ident as ::union_fn::UnionFn>::Output
                 {
                     let #tuple_bindings = unsafe { args.#method_ident };
-                    <#trait_ident as ::union_fn::UnionFn>::Impls::#method_ident( #ctx_ident #( #bindings ),* )
+                    <#trait_ident as ::union_fn::IntoOpt>::Impls::#method_ident( #ctx_ident #( #bindings ),* )
                 }
             )
         });
@@ -133,6 +127,8 @@ impl UnionFn {
         let span = self.span();
         let trait_ident = self.ident();
         let ident_opt = self.ident_opt();
+        let ident_impls = self.ident_impls();
+        let ident_delegate = self.ident_delegate();
         let opt_docs = format!("Call optimized structure of the [`{trait_ident}`] type.");
         let call_impl = self.expand_call_impl();
         let constructors = self.expand_constructors();
@@ -152,6 +148,8 @@ impl UnionFn {
 
             impl ::union_fn::IntoOpt for #trait_ident {
                 type Opt = #ident_opt;
+                type Delegator = #ident_delegate;
+                type Impls = #ident_impls;
 
                 fn into_opt(self) -> Self::Opt {
                     match self {
@@ -291,7 +289,7 @@ impl UnionFn {
                 #( #method_attrs )*
                 pub fn #method_ident( #( #params ),* ) -> Self {
                     Self {
-                        handler: <#trait_ident as ::union_fn::UnionFn>::Delegator::#method_ident,
+                        handler: <#trait_ident as ::union_fn::IntoOpt>::Delegator::#method_ident,
                         args: <#trait_ident as ::union_fn::UnionFn>::Args::#method_ident( #( #param_bindings ),* ),
                     }
                 }
