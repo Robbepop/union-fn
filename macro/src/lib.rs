@@ -15,12 +15,34 @@ mod utils;
 /// Proc. macro applied on Rust trait definitions to generate so-called "union functions".
 ///
 /// A `#[union_fn]` can be thought of as a set of polymorphic, parameterized functions
-/// that are optimized for data locality and calling.
+/// that are optimized for data locality and polymorphic calls.
 ///
-/// A `#[union_fn]` invocation will primarily generate an `enum` type of the same name
-/// that has one variant per trait method, mimicking the method parameters.
-/// The generated `enum` can be turned into an optimized version for better data locality
-/// and call performance via the [`IntoOpt::into_opt`] trait method.
+/// ## Motivation & Idea
+///
+/// Interpreters usually use a `switch-loop` based instruction dispatch where a simple `enum` represents
+/// all kinds of different instructions such as `Add` and `Branch`.
+/// Instruction dispatch occurs in between instruction execution and has a lot of overhead when using
+/// this form of dispatch via branch table which often is not optimized ideally.
+///
+/// The `#[union_fn]` macro decreases the dispatch costs down to the minimal by embedding the function
+/// pointer to the instruction handling instruction directly into the type next to its function parameters.
+/// This way there is no need for a branch table and a call dispatch is equal to an indirect function call.
+///
+/// ## Codegen
+///
+/// The `#[union_fn]` macro primarily generates 2 different types:
+///
+/// - An enum representation of all trait methods referred to by the trait's identifier.
+///     - Useful to inspect, debug and create the different calls.
+///     - Accessed via the trait's identifier, e.g. `Foo`.
+///     - Each method generates a constructor with the same name and arguments.
+/// - A type optimized for data locality and polymorphic calls.
+///     - Primarily used for actual calling during the compute phase.
+///     - Accessed via `<Foo as union_fn::UnionFn>::Opt>` where `Foo` is the trait's identifier.
+///     - Each method generates a constructor with the same name and arguments OR;
+///       it is possible to convert from the `enum` representation via the [`IntoOpt::into_opt`] trait.
+///
+/// ## Usage
 ///
 /// Calling instances of the `enum` or its optimized version are done via the
 /// [`Call::call`] or [`CallWithContext::call`] trait method depending on if the
@@ -32,6 +54,12 @@ mod utils;
 /// [`type Output`]: trait.UnionFn.html#associatedtype.Output
 ///
 /// ## Example
+///
+/// ### Interpreters
+///
+/// A full fledged calculator example that acts as inspiration for interpreters can be found [here](./tests/ui/pass/calculator.rs).
+///
+/// ### Codegen
 ///
 /// Given the following Rust code and `#[union_fn]` macro invocation:
 ///
