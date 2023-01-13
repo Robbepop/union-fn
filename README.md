@@ -94,7 +94,7 @@ This proc. macro will expand to roughly the following code:
 (Note, for demonstration purposes whitespace and derive macro expansions have been changed.)
 
 ```rust
-#[derive(Copy, Clone)]
+#[derive(::core::marker::Copy, ::core::clone::Clone)]
 pub enum Counter {
     /// Bumps the value `by` the amount.
     BumpBy { by: i64 },
@@ -104,27 +104,17 @@ pub enum Counter {
     Reset {},
 }
 
-impl ::union_fn::IntoOpt for Counter {
-    fn into_opt(self) -> <Counter as ::union_fn::UnionFn>::Opt {
-        match self {
-            Self::BumpBy { by } => <Counter as ::union_fn::UnionFn>::Opt::bump_by(by),
-            Self::Select { choices } => {
-                <Counter as ::union_fn::UnionFn>::Opt::select(choices)
-            }
-            Self::Reset {} => <Counter as ::union_fn::UnionFn>::Opt::reset(),
-        }
-    }
-}
-
 impl Counter {
     /// Bumps the value `by` the amount.
     pub fn bump_by(by: i64) -> Self {
         Self::BumpBy { by }
     }
+
     /// Selects the values in `choices` depending on `value`.
     pub fn select(choices: [i64; 4]) -> Self {
         Self::Select { choices }
     }
+
     /// Resets the `value` to zero.
     pub fn reset() -> Self {
         Self::Reset {}
@@ -134,7 +124,7 @@ impl Counter {
 impl ::union_fn::CallWithContext for Counter {
     type Context = i64;
     fn call(self, ctx: &mut Self::Context) -> <Counter as ::union_fn::UnionFn>::Output {
-        <<Counter as ::union_fn::UnionFn>::Opt as ::union_fn::CallWithContext>::call(
+        <<Counter as ::union_fn::IntoOpt>::Opt as ::union_fn::CallWithContext>::call(
             <Counter as ::union_fn::IntoOpt>::into_opt(self),
             ctx,
         )
@@ -142,24 +132,71 @@ impl ::union_fn::CallWithContext for Counter {
 }
 
 const _: () = {
-    impl ::union_fn::UnionFn for CounterOpt {
-        type Output = ();
-        type Opt = Self;
-        type Args = CounterArgs;
-        type Impls = CounterImpls;
-        type Delegator = CounterDelegate;
+    ///Call optimized structure of the [`Counter`] type.
+    #[derive(::core::marker::Copy, ::core::clone::Clone)]
+    pub struct CounterOpt {
+        handler: fn(
+            ctx: &mut <Counter as ::union_fn::CallWithContext>::Context,
+            <Counter as ::union_fn::UnionFn>::Args,
+        ) -> <Counter as ::union_fn::UnionFn>::Output,
+        args: <Counter as ::union_fn::UnionFn>::Args,
     }
 
-    impl ::union_fn::UnionFn for Counter {
-        type Output = ();
+    impl ::union_fn::IntoOpt for Counter {
         type Opt = CounterOpt;
-        type Args = CounterArgs;
-        type Impls = CounterImpls;
         type Delegator = CounterDelegate;
+        type Impls = CounterImpls;
+
+        fn into_opt(self) -> Self::Opt {
+            match self {
+                Self::BumpBy { by } => <Counter as ::union_fn::IntoOpt>::Opt::bump_by(by),
+                Self::Select { choices } => {
+                    <Counter as ::union_fn::IntoOpt>::Opt::select(choices)
+                }
+                Self::Reset {} => <Counter as ::union_fn::IntoOpt>::Opt::reset(),
+            }
+        }
+    }
+
+    impl ::union_fn::CallWithContext for CounterOpt {
+        type Context = i64;
+
+        fn call(
+            self,
+            ctx: &mut Self::Context,
+        ) -> <Counter as ::union_fn::UnionFn>::Output {
+            (self.handler)(ctx, self.args)
+        }
+    }
+
+    impl CounterOpt {
+        /// Bumps the value `by` the amount.
+        pub fn bump_by(by: i64) -> Self {
+            Self {
+                handler: <Counter as ::union_fn::IntoOpt>::Delegator::bump_by,
+                args: <Counter as ::union_fn::UnionFn>::Args::bump_by(by),
+            }
+        }
+
+        /// Selects the values in `choices` depending on `value`.
+        pub fn select(choices: [i64; 4]) -> Self {
+            Self {
+                handler: <Counter as ::union_fn::IntoOpt>::Delegator::select,
+                args: <Counter as ::union_fn::UnionFn>::Args::select(choices),
+            }
+        }
+
+        /// Resets the `value` to zero.
+        pub fn reset() -> Self {
+            Self {
+                handler: <Counter as ::union_fn::IntoOpt>::Delegator::reset,
+                args: <Counter as ::union_fn::UnionFn>::Args::reset(),
+            }
+        }
     }
 
     ///Efficiently packed method arguments for the [`Counter`] type.
-    #[derive(Copy, Clone)]
+    #[derive(::core::marker::Copy, ::core::clone::Clone)]
     pub union CounterArgs {
         /// Bumps the value `by` the amount.
         bump_by: i64,
@@ -186,6 +223,16 @@ const _: () = {
         }
     }
 
+    impl ::union_fn::UnionFn for CounterOpt {
+        type Output = ();
+        type Args = CounterArgs;
+    }
+
+    impl ::union_fn::UnionFn for Counter {
+        type Output = ();
+        type Args = CounterArgs;
+    }
+
     ///Decodes and delegates packed arguments to the implementation of [`Counter`] methods.
     pub enum CounterDelegate {}
 
@@ -196,7 +243,7 @@ const _: () = {
             args: <Counter as ::union_fn::UnionFn>::Args,
         ) -> <Counter as ::union_fn::UnionFn>::Output {
             let by = unsafe { args.bump_by };
-            <Counter as ::union_fn::UnionFn>::Impls::bump_by(value, by)
+            <Counter as ::union_fn::IntoOpt>::Impls::bump_by(value, by)
         }
 
         /// Selects the values in `choices` depending on `value`.
@@ -205,7 +252,7 @@ const _: () = {
             args: <Counter as ::union_fn::UnionFn>::Args,
         ) -> <Counter as ::union_fn::UnionFn>::Output {
             let choices = unsafe { args.select };
-            <Counter as ::union_fn::UnionFn>::Impls::select(value, choices)
+            <Counter as ::union_fn::IntoOpt>::Impls::select(value, choices)
         }
 
         /// Resets the `value` to zero.
@@ -214,7 +261,7 @@ const _: () = {
             args: <Counter as ::union_fn::UnionFn>::Args,
         ) -> <Counter as ::union_fn::UnionFn>::Output {
             let () = unsafe { args.reset };
-            <Counter as ::union_fn::UnionFn>::Impls::reset(value)
+            <Counter as ::union_fn::IntoOpt>::Impls::reset(value)
         }
     }
 
@@ -243,52 +290,6 @@ const _: () = {
             value: &mut <Counter as ::union_fn::CallWithContext>::Context,
         ) -> <Counter as ::union_fn::UnionFn>::Output {
             *value = 0;
-        }
-    }
-
-    ///Call optimized structure of the [`Counter`] type.
-    #[derive(Copy, Clone)]
-    pub struct CounterOpt {
-        handler: fn(
-            ctx: &mut <Counter as ::union_fn::CallWithContext>::Context,
-            <Counter as ::union_fn::UnionFn>::Args,
-        ) -> <Counter as ::union_fn::UnionFn>::Output,
-        args: <Counter as ::union_fn::UnionFn>::Args,
-    }
-
-    impl ::union_fn::CallWithContext for CounterOpt {
-        type Context = i64;
-        fn call(
-            self,
-            ctx: &mut Self::Context,
-        ) -> <Counter as ::union_fn::UnionFn>::Output {
-            (self.handler)(ctx, self.args)
-        }
-    }
-
-    impl CounterOpt {
-        /// Bumps the value `by` the amount.
-        pub fn bump_by(by: i64) -> Self {
-            Self {
-                handler: <Counter as ::union_fn::UnionFn>::Delegator::bump_by,
-                args: <Counter as ::union_fn::UnionFn>::Args::bump_by(by),
-            }
-        }
-
-        /// Selects the values in `choices` depending on `value`.
-        pub fn select(choices: [i64; 4]) -> Self {
-            Self {
-                handler: <Counter as ::union_fn::UnionFn>::Delegator::select,
-                args: <Counter as ::union_fn::UnionFn>::Args::select(choices),
-            }
-        }
-
-        /// Resets the `value` to zero.
-        pub fn reset() -> Self {
-            Self {
-                handler: <Counter as ::union_fn::UnionFn>::Delegator::reset,
-                args: <Counter as ::union_fn::UnionFn>::Args::reset(),
-            }
         }
     }
 };
