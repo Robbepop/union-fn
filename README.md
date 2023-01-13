@@ -16,6 +16,11 @@ The `#[union_fn]` macro decreases the dispatch costs down to the minimal by embe
 pointer to the instruction handling instruction directly into the type next to its function parameters.
 This way there is no need for a branch table and a call dispatch is equal to an indirect function call.
 
+Due to alignment of Rust `enum` discriminants there is a lot of wasted space for the `enum`
+representation which is properly utilized by the optimized representation by storing a function pointer
+instead of the `enum` discriminant. Therefore both types usually have equal `size_of`. The function
+pointed to then knows how to decode the function parameters encoded via `union` with zero overhead.
+
 ## Codegen
 
 The `#[union_fn]` macro primarily generates 2 different types:
