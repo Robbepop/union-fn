@@ -15,6 +15,12 @@ to the `union`-packed data. This optimizes data locality and removes the need fo
 
 ## Example
 
+### Interpreters
+
+A full fledged calculator example that acts as inspiration for interpreters can be found [here](./tests/ui/pass/calculator.rs).
+
+### Codegen
+
 Given the following Rust code:
 
 ```rust
