@@ -38,7 +38,7 @@ mod utils;
 ///     - Each method generates a constructor with the same name and arguments.
 /// - A type optimized for data locality and polymorphic calls.
 ///     - Primarily used for actual calling during the compute phase.
-///     - Accessed via `<Foo as union_fn::UnionFn>::Opt>` where `Foo` is the trait's identifier.
+///     - Accessed via `<Foo as union_fn::IntoOpt>::Opt>` where `Foo` is the trait's identifier.
 ///     - Each method generates a constructor with the same name and arguments OR;
 ///       it is possible to convert from the `enum` representation via the [`IntoOpt::into_opt`] trait.
 ///
