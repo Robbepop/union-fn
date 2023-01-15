@@ -243,6 +243,7 @@ impl UnionFn {
     fn expand_union_fn_enum_call_impl(&self) -> TokenStream2 {
         let trait_span = self.span();
         let trait_ident = self.ident();
+        let match_arms = self.expand_union_fn_enum_call_impl_arms();
         match self.state.get_context() {
             Some(context) => {
                 quote_spanned!(trait_span=>
@@ -250,11 +251,9 @@ impl UnionFn {
                         type Context = #context;
 
                         fn call(self, ctx: &mut Self::Context) -> <#trait_ident as ::union_fn::UnionFn>::Output {
-                            <<#trait_ident as ::union_fn::IntoOpt>::Opt
-                                as ::union_fn::CallWithContext>::call(
-                                    <#trait_ident as ::union_fn::IntoOpt>::into_opt(self),
-                                    ctx,
-                                )
+                            match self {
+                                #( #match_arms )*
+                            }
                         }
                     }
                 )
@@ -263,15 +262,36 @@ impl UnionFn {
                 quote_spanned!(trait_span=>
                     impl ::union_fn::Call for #trait_ident {
                         fn call(self) -> <#trait_ident as ::union_fn::UnionFn>::Output {
-                            <<#trait_ident as ::union_fn::IntoOpt>::Opt
-                                as ::union_fn::Call>::call(
-                                    <#trait_ident as ::union_fn::IntoOpt>::into_opt(self)
-                                )
+                            match self {
+                                #( #match_arms )*
+                            }
                         }
                     }
                 )
             }
         }
+    }
+
+    /// Expands the match arms of either the `union_fn::Call` or `union_fn::CallWithContext` impl.
+    fn expand_union_fn_enum_call_impl_arms(&self) -> impl Iterator<Item = TokenStream2> + '_ {
+        let trait_ident = self.ident();
+        let ctx_param = self
+            .state
+            .get_context()
+            .map(|ctx| quote_spanned!(ctx.span()=> ctx,));
+        self.methods().map(move |method| {
+            let method_span = method.span();
+            let method_ident = method.ident();
+            let variant_ident = method_ident.to_upper_camel_case();
+            let bindings = method.input_bindings(&self.state);
+            quote_spanned!(method_span=>
+                Self::#variant_ident { #( #bindings ),* } => {
+                    <#trait_ident as ::union_fn::IntoOpt>::Impls::#method_ident(
+                        #ctx_param #( #bindings ),*
+                    )
+                }
+            )
+        })
     }
 
     /// Expand the `#[union_fn]` constructors.
