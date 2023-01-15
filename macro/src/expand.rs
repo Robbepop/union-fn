@@ -104,7 +104,7 @@ impl UnionFn {
             let tuple_bindings = make_tuple_type(method_span, &bindings);
             quote_spanned!(method_span=>
                 #( #method_attrs )*
-                fn #method_ident( #ctx_param args: <#trait_ident as ::union_fn::UnionFn>::Args )
+                fn #method_ident( #ctx_param args: &<#trait_ident as ::union_fn::UnionFn>::Args )
                     -> <#trait_ident as ::union_fn::UnionFn>::Output
                 {
                     let #tuple_bindings = unsafe { args.#method_ident };
@@ -142,7 +142,7 @@ impl UnionFn {
             #[doc = #opt_docs]
             #[derive(::core::marker::Copy, ::core::clone::Clone)]
             pub struct #ident_opt {
-                handler: fn(#ctx <#trait_ident as ::union_fn::UnionFn>::Args) -> <#trait_ident as ::union_fn::UnionFn>::Output,
+                handler: fn(#ctx &<#trait_ident as ::union_fn::UnionFn>::Args) -> <#trait_ident as ::union_fn::UnionFn>::Output,
                 args: <#trait_ident as ::union_fn::UnionFn>::Args,
             }
 
@@ -332,7 +332,7 @@ impl UnionFn {
                         type Context = #context;
 
                         fn call(self, ctx: &mut Self::Context) -> <#ident as ::union_fn::UnionFn>::Output {
-                            (self.handler)(ctx, self.args)
+                            (self.handler)(ctx, &self.args)
                         }
                     }
                 )
@@ -341,7 +341,7 @@ impl UnionFn {
                 quote_spanned!(span=>
                     impl ::union_fn::Call for #ident_opt {
                         fn call(self) -> <#ident as ::union_fn::UnionFn>::Output {
-                            (self.handler)(self.args)
+                            (self.handler)(&self.args)
                         }
                     }
                 )
