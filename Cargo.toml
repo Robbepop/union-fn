@@ -25,6 +25,15 @@ union-fn-macro = { version = "0.1.0", path = "macro" }
 
 [dev-dependencies]
 trybuild = { version = "1.0.60", features = ["diff"] }
+criterion = { version = "0.4", default-features = false }
 
 [workspace]
 members = ["macro"]
+
+[profile.bench]
+lto = "fat"
+codegen-units = 1
+
+[[bench]]
+name = "cmp"
+harness = false
