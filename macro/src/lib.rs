@@ -149,11 +149,22 @@ mod utils;
 ///
 /// impl ::union_fn::CallWithContext for Counter {
 ///     type Context = i64;
-///     fn call(self, ctx: &mut Self::Context) -> <Counter as ::union_fn::UnionFn>::Output {
-///         <<Counter as ::union_fn::IntoOpt>::Opt as ::union_fn::CallWithContext>::call(
-///             <Counter as ::union_fn::IntoOpt>::into_opt(self),
-///             ctx,
-///         )
+/// 
+///     fn call(
+///         self,
+///         ctx: &mut Self::Context,
+///     ) -> <Counter as ::union_fn::UnionFn>::Output {
+///         match self {
+///             Self::BumpBy { by } => {
+///                 <Counter as ::union_fn::IntoOpt>::Impls::bump_by(ctx, by)
+///             }
+///             Self::Select { choices } => {
+///                 <Counter as ::union_fn::IntoOpt>::Impls::select(ctx, choices)
+///             }
+///             Self::Reset { } => {
+///                 <Counter as ::union_fn::IntoOpt>::Impls::reset(ctx,)
+///             }
+///         }
 ///     }
 /// }
 ///
