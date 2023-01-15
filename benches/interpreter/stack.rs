@@ -41,6 +41,11 @@ impl Stack {
         self.sp += 1;
     }
 
+    /// Peeks the top most value from the [`Stack`] and returns it.
+    pub fn peek(&self) -> UntypedValue {
+        self.values[self.sp - 1]
+    }
+
     /// Pops the top most value from the [`Stack`] and returns it.
     pub fn pop(&mut self) -> UntypedValue {
         self.sp -= 1;

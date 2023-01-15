@@ -4,6 +4,7 @@ mod context;
 mod instr;
 mod stack;
 
+pub use self::instr::{BranchOffset, Instr};
 use self::{
     context::{Control, ExecutionContext},
     stack::Stack,
@@ -16,9 +17,9 @@ use wasmi_core::TrapCode;
 /// # Errors
 ///
 /// If a trap occurs during execution.
-pub fn execute<Instr>(instrs: &[Instr], inputs: &[i64]) -> Result<i64, TrapCode>
+pub fn execute<I>(instrs: &[I], inputs: &[i64]) -> Result<i64, TrapCode>
 where
-    Instr: CallWithContext<Context = ExecutionContext>
+    I: CallWithContext<Context = ExecutionContext>
         + UnionFn<Output = Result<Control, TrapCode>>
         + Copy
         + Clone,

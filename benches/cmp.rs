@@ -8,8 +8,10 @@
 
 mod interpreter;
 
-use criterion::{criterion_group, criterion_main, Bencher, Criterion};
+use criterion::{criterion_group, criterion_main, Criterion};
+use interpreter::{execute, BranchOffset, Instr};
 use std::time::Duration;
+use union_fn::IntoOpt;
 
 criterion_group!(
     name = bench_interpret;
@@ -23,20 +25,36 @@ criterion_group!(
 );
 criterion_main!(bench_interpret);
 
+/// Instructions for counting until a given input from zero.
+fn count_until() -> Vec<Instr> {
+    vec![
+        Instr::constant(0),  // local: counter
+        Instr::local_get(1), // dup(counter)
+        Instr::constant(1),
+        Instr::add(),        // counter + 1
+        Instr::local_tee(1), // counter = counter + 1
+        Instr::local_get(0), // local: until
+        Instr::ne(),
+        Instr::br_eqz(BranchOffset::new(2)),
+        Instr::br(BranchOffset::new(-7)),
+        Instr::local_get(1),
+        Instr::ret(),
+    ]
+}
+
 fn bench_interpret_enum(c: &mut Criterion) {
     c.bench_function("interpret/enum", |b| {
-        // TODO: setup
-        b.iter(|| {
-            // TODO: benchmark routine
-        })
+        let instrs = count_until();
+        b.iter(|| execute(&instrs, &[3]))
     });
 }
 
 fn bench_interpret_opt(c: &mut Criterion) {
-    c.bench_function("interpret/enum", |b| {
-        // TODO: setup
-        b.iter(|| {
-            // TODO: benchmark routine
-        })
+    c.bench_function("interpret/opt", |b| {
+        let instrs = count_until()
+            .into_iter()
+            .map(IntoOpt::into_opt)
+            .collect::<Vec<_>>();
+        b.iter(|| execute(&instrs, &[10]))
     });
 }
