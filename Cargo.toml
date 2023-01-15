@@ -26,6 +26,7 @@ union-fn-macro = { version = "0.1.0", path = "macro" }
 [dev-dependencies]
 trybuild = { version = "1.0.60", features = ["diff"] }
 criterion = { version = "0.4", default-features = false }
+wasmi_core = "0.6.0"
 
 [workspace]
 members = ["macro"]
