@@ -141,13 +141,13 @@ impl ::union_fn::CallWithContext for Counter {
     ) -> <Counter as ::union_fn::UnionFn>::Output {
         match self {
             Self::BumpBy { by } => {
-                <Counter as ::union_fn::IntoOpt>::Impls::bump_by(ctx, by)
+                <Self as ::union_fn::IntoOpt>::Impls::bump_by(ctx, by)
             }
             Self::Select { choices } => {
-                <Counter as ::union_fn::IntoOpt>::Impls::select(ctx, choices)
+                <Self as ::union_fn::IntoOpt>::Impls::select(ctx, choices)
             }
             Self::Reset { } => {
-                <Counter as ::union_fn::IntoOpt>::Impls::reset(ctx,)
+                <Self as ::union_fn::IntoOpt>::Impls::reset(ctx,)
             }
         }
     }
@@ -171,11 +171,11 @@ const _: () = {
 
         fn into_opt(self) -> Self::Opt {
             match self {
-                Self::BumpBy { by } => <Counter as ::union_fn::IntoOpt>::Opt::bump_by(by),
+                Self::BumpBy { by } => <Self as ::union_fn::IntoOpt>::Opt::bump_by(by),
                 Self::Select { choices } => {
-                    <Counter as ::union_fn::IntoOpt>::Opt::select(choices)
+                    <Self as ::union_fn::IntoOpt>::Opt::select(choices)
                 }
-                Self::Reset {} => <Counter as ::union_fn::IntoOpt>::Opt::reset(),
+                Self::Reset {} => <Self as ::union_fn::IntoOpt>::Opt::reset(),
             }
         }
     }
