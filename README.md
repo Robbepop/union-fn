@@ -1,3 +1,14 @@
+| Continuous Integration |  Documentation   |      Crates.io       |
+|:----------------------:|:----------------:|:--------------------:|
+| [![ci][1]][2]          | [![docs][3]][4] | [![crates][5]][6]  |
+
+[1]: https://github.com/Robbepop/union-fn/actions/workflows/rust.yml/badge.svg
+[2]: https://github.com/Robbepop/union-fn/actions/workflows/rust.yml
+[3]: https://docs.rs/union-fn/badge.svg
+[4]: https://docs.rs/union-fn
+[5]: https://img.shields.io/crates/v/union-fn.svg
+[6]: https://crates.io/crates/union-fn
+
 # `#[union_fn]`: Data Structure for Efficient Interpreters
 
 This crate provides a procedural macro `#[union_fn]` that can be applied to Rust `trait` definitions.
