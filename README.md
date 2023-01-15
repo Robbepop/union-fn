@@ -159,7 +159,7 @@ const _: () = {
     pub struct CounterOpt {
         handler: fn(
             ctx: &mut <Counter as ::union_fn::CallWithContext>::Context,
-            <Counter as ::union_fn::UnionFn>::Args,
+            &<Counter as ::union_fn::UnionFn>::Args,
         ) -> <Counter as ::union_fn::UnionFn>::Output,
         args: <Counter as ::union_fn::UnionFn>::Args,
     }
@@ -187,7 +187,7 @@ const _: () = {
             self,
             ctx: &mut Self::Context,
         ) -> <Counter as ::union_fn::UnionFn>::Output {
-            (self.handler)(ctx, self.args)
+            (self.handler)(ctx, &self.args)
         }
     }
 
@@ -262,7 +262,7 @@ const _: () = {
         /// Bumps the value `by` the amount.
         fn bump_by(
             value: &mut <Counter as ::union_fn::CallWithContext>::Context,
-            args: <Counter as ::union_fn::UnionFn>::Args,
+            args: &<Counter as ::union_fn::UnionFn>::Args,
         ) -> <Counter as ::union_fn::UnionFn>::Output {
             let by = unsafe { args.bump_by };
             <Counter as ::union_fn::IntoOpt>::Impls::bump_by(value, by)
@@ -271,7 +271,7 @@ const _: () = {
         /// Selects the values in `choices` depending on `value`.
         fn select(
             value: &mut <Counter as ::union_fn::CallWithContext>::Context,
-            args: <Counter as ::union_fn::UnionFn>::Args,
+            args: &<Counter as ::union_fn::UnionFn>::Args,
         ) -> <Counter as ::union_fn::UnionFn>::Output {
             let choices = unsafe { args.select };
             <Counter as ::union_fn::IntoOpt>::Impls::select(value, choices)
@@ -280,7 +280,7 @@ const _: () = {
         /// Resets the `value` to zero.
         fn reset(
             value: &mut <Counter as ::union_fn::CallWithContext>::Context,
-            args: <Counter as ::union_fn::UnionFn>::Args,
+            args: &<Counter as ::union_fn::UnionFn>::Args,
         ) -> <Counter as ::union_fn::UnionFn>::Output {
             let () = unsafe { args.reset };
             <Counter as ::union_fn::IntoOpt>::Impls::reset(value)
