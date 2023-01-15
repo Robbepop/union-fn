@@ -149,7 +149,7 @@ mod utils;
 ///
 /// impl ::union_fn::CallWithContext for Counter {
 ///     type Context = i64;
-/// 
+///
 ///     fn call(
 ///         self,
 ///         ctx: &mut Self::Context,
