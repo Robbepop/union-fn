@@ -38,7 +38,7 @@ mod utils;
 ///     - Each method generates a constructor with the same name and arguments.
 /// - A type optimized for data locality and polymorphic calls.
 ///     - Primarily used for actual calling during the compute phase.
-///     - Accessed via `<Foo as union_fn::UnionFn>::Opt>` where `Foo` is the trait's identifier.
+///     - Accessed via `<Foo as union_fn::IntoOpt>::Opt>` where `Foo` is the trait's identifier.
 ///     - Each method generates a constructor with the same name and arguments OR;
 ///       it is possible to convert from the `enum` representation via the [`IntoOpt::into_opt`] trait.
 ///
@@ -149,11 +149,22 @@ mod utils;
 ///
 /// impl ::union_fn::CallWithContext for Counter {
 ///     type Context = i64;
-///     fn call(self, ctx: &mut Self::Context) -> <Counter as ::union_fn::UnionFn>::Output {
-///         <<Counter as ::union_fn::IntoOpt>::Opt as ::union_fn::CallWithContext>::call(
-///             <Counter as ::union_fn::IntoOpt>::into_opt(self),
-///             ctx,
-///         )
+///
+///     fn call(
+///         self,
+///         ctx: &mut Self::Context,
+///     ) -> <Counter as ::union_fn::UnionFn>::Output {
+///         match self {
+///             Self::BumpBy { by } => {
+///                 <Self as ::union_fn::IntoOpt>::Impls::bump_by(ctx, by)
+///             }
+///             Self::Select { choices } => {
+///                 <Self as ::union_fn::IntoOpt>::Impls::select(ctx, choices)
+///             }
+///             Self::Reset { } => {
+///                 <Self as ::union_fn::IntoOpt>::Impls::reset(ctx,)
+///             }
+///         }
 ///     }
 /// }
 ///
@@ -175,11 +186,11 @@ mod utils;
 ///
 ///         fn into_opt(self) -> Self::Opt {
 ///             match self {
-///                 Self::BumpBy { by } => <Counter as ::union_fn::IntoOpt>::Opt::bump_by(by),
+///                 Self::BumpBy { by } => <Self as ::union_fn::IntoOpt>::Opt::bump_by(by),
 ///                 Self::Select { choices } => {
-///                     <Counter as ::union_fn::IntoOpt>::Opt::select(choices)
+///                     <Self as ::union_fn::IntoOpt>::Opt::select(choices)
 ///                 }
-///                 Self::Reset {} => <Counter as ::union_fn::IntoOpt>::Opt::reset(),
+///                 Self::Reset {} => <Self as ::union_fn::IntoOpt>::Opt::reset(),
 ///             }
 ///         }
 ///     }

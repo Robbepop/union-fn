@@ -1,3 +1,14 @@
+| Continuous Integration |  Documentation   |      Crates.io       |
+|:----------------------:|:----------------:|:--------------------:|
+| [![ci][1]][2]          | [![docs][3]][4] | [![crates][5]][6]  |
+
+[1]: https://github.com/Robbepop/union-fn/actions/workflows/rust.yml/badge.svg
+[2]: https://github.com/Robbepop/union-fn/actions/workflows/rust.yml
+[3]: https://docs.rs/union-fn/badge.svg
+[4]: https://docs.rs/union-fn
+[5]: https://img.shields.io/crates/v/union-fn.svg
+[6]: https://crates.io/crates/union-fn
+
 # `#[union_fn]`: Data Structure for Efficient Interpreters
 
 This crate provides a procedural macro `#[union_fn]` that can be applied to Rust `trait` definitions.
@@ -31,7 +42,7 @@ The `#[union_fn]` macro primarily generates 2 different types:
     - Each method generates a constructor with the same name and arguments.
 - A type optimized for data locality and polymorphic calls.
     - Primarily used for actual calling during the compute phase.
-    - Accessed via `<Foo as union_fn::UnionFn>::Opt>` where `Foo` is the trait's identifier.
+    - Accessed via `<Foo as union_fn::IntoOpt>::Opt>` where `Foo` is the trait's identifier.
     - Each method generates a constructor with the same name and arguments OR;
       it is possible to convert from the `enum` representation via the `union_fn::IntoOpt` trait.
 
@@ -123,11 +134,22 @@ impl Counter {
 
 impl ::union_fn::CallWithContext for Counter {
     type Context = i64;
-    fn call(self, ctx: &mut Self::Context) -> <Counter as ::union_fn::UnionFn>::Output {
-        <<Counter as ::union_fn::IntoOpt>::Opt as ::union_fn::CallWithContext>::call(
-            <Counter as ::union_fn::IntoOpt>::into_opt(self),
-            ctx,
-        )
+
+    fn call(
+        self,
+        ctx: &mut Self::Context,
+    ) -> <Counter as ::union_fn::UnionFn>::Output {
+        match self {
+            Self::BumpBy { by } => {
+                <Self as ::union_fn::IntoOpt>::Impls::bump_by(ctx, by)
+            }
+            Self::Select { choices } => {
+                <Self as ::union_fn::IntoOpt>::Impls::select(ctx, choices)
+            }
+            Self::Reset { } => {
+                <Self as ::union_fn::IntoOpt>::Impls::reset(ctx,)
+            }
+        }
     }
 }
 
@@ -149,11 +171,11 @@ const _: () = {
 
         fn into_opt(self) -> Self::Opt {
             match self {
-                Self::BumpBy { by } => <Counter as ::union_fn::IntoOpt>::Opt::bump_by(by),
+                Self::BumpBy { by } => <Self as ::union_fn::IntoOpt>::Opt::bump_by(by),
                 Self::Select { choices } => {
-                    <Counter as ::union_fn::IntoOpt>::Opt::select(choices)
+                    <Self as ::union_fn::IntoOpt>::Opt::select(choices)
                 }
-                Self::Reset {} => <Counter as ::union_fn::IntoOpt>::Opt::reset(),
+                Self::Reset {} => <Self as ::union_fn::IntoOpt>::Opt::reset(),
             }
         }
     }
