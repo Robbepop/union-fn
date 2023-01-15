@@ -45,7 +45,7 @@ fn count_until() -> Vec<Instr> {
 fn bench_interpret_enum(c: &mut Criterion) {
     c.bench_function("interpret/enum", |b| {
         let instrs = count_until();
-        b.iter(|| execute(&instrs, &[3]))
+        b.iter(|| execute(&instrs, &[1_000_000]))
     });
 }
 
@@ -55,6 +55,6 @@ fn bench_interpret_opt(c: &mut Criterion) {
             .into_iter()
             .map(IntoOpt::into_opt)
             .collect::<Vec<_>>();
-        b.iter(|| execute(&instrs, &[10]))
+        b.iter(|| execute(&instrs, &[1_000_000]))
     });
 }
