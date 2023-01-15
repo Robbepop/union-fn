@@ -11,9 +11,9 @@ pub struct BranchOffset(NonZeroIsize);
 
 impl BranchOffset {
     /// Creates a new [`BranchOffset`] from the given `value`.
-    /// 
+    ///
     /// # Panics
-    /// 
+    ///
     /// If `value` is equal to zero.
     pub fn new(value: isize) -> Self {
         BranchOffset(NonZeroIsize::new(value).expect("cannot have a branch offset of zero"))
@@ -48,13 +48,15 @@ pub trait Instr {
     /// - Pushes the 3rd top most value if `s == 0`
     /// - Pushes the 2nd top most value if `s != 0`
     fn select(ctx: &mut Self::Context) -> Self::Output {
-        ctx.stack.eval3(|lhs, rhs, selector| {
-            if i32::from(selector) != 0 {
-                lhs
-            } else {
-                rhs
-            }
-        });
+        ctx.stack.eval3(
+            |lhs, rhs, selector| {
+                if i32::from(selector) != 0 {
+                    lhs
+                } else {
+                    rhs
+                }
+            },
+        );
         ctx.next_instr()
     }
 

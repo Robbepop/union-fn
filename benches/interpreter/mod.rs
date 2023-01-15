@@ -4,7 +4,11 @@ mod context;
 mod instr;
 mod stack;
 
-use self::{context::{ExecutionContext, Control}, instr::Instr, stack::Stack};
+use self::{
+    context::{Control, ExecutionContext},
+    instr::Instr,
+    stack::Stack,
+};
 use union_fn::CallWithContext;
 use wasmi_core::TrapCode;
 
