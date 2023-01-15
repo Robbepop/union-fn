@@ -159,7 +159,7 @@ const _: () = {
     pub struct CounterOpt {
         handler: fn(
             ctx: &mut <Counter as ::union_fn::CallWithContext>::Context,
-            <Counter as ::union_fn::UnionFn>::Args,
+            &<Counter as ::union_fn::UnionFn>::Args,
         ) -> <Counter as ::union_fn::UnionFn>::Output,
         args: <Counter as ::union_fn::UnionFn>::Args,
     }
@@ -187,7 +187,7 @@ const _: () = {
             self,
             ctx: &mut Self::Context,
         ) -> <Counter as ::union_fn::UnionFn>::Output {
-            (self.handler)(ctx, self.args)
+            (self.handler)(ctx, &self.args)
         }
     }
 
@@ -262,7 +262,7 @@ const _: () = {
         /// Bumps the value `by` the amount.
         fn bump_by(
             value: &mut <Counter as ::union_fn::CallWithContext>::Context,
-            args: <Counter as ::union_fn::UnionFn>::Args,
+            args: &<Counter as ::union_fn::UnionFn>::Args,
         ) -> <Counter as ::union_fn::UnionFn>::Output {
             let by = unsafe { args.bump_by };
             <Counter as ::union_fn::IntoOpt>::Impls::bump_by(value, by)
@@ -271,7 +271,7 @@ const _: () = {
         /// Selects the values in `choices` depending on `value`.
         fn select(
             value: &mut <Counter as ::union_fn::CallWithContext>::Context,
-            args: <Counter as ::union_fn::UnionFn>::Args,
+            args: &<Counter as ::union_fn::UnionFn>::Args,
         ) -> <Counter as ::union_fn::UnionFn>::Output {
             let choices = unsafe { args.select };
             <Counter as ::union_fn::IntoOpt>::Impls::select(value, choices)
@@ -280,7 +280,7 @@ const _: () = {
         /// Resets the `value` to zero.
         fn reset(
             value: &mut <Counter as ::union_fn::CallWithContext>::Context,
-            args: <Counter as ::union_fn::UnionFn>::Args,
+            args: &<Counter as ::union_fn::UnionFn>::Args,
         ) -> <Counter as ::union_fn::UnionFn>::Output {
             let () = unsafe { args.reset };
             <Counter as ::union_fn::IntoOpt>::Impls::reset(value)
@@ -315,4 +315,58 @@ const _: () = {
         }
     }
 };
+```
+
+## Generated Assembly
+
+Below is the generated assembly for the `Call[WithContext]` trait according to
+the [Compiler Explorer](https://rust.godbolt.org/) for the generated user facing
+`enum` and the call-optimized `opt` types for the above `Counter` example:
+
+### `Call[WithContext] for <enum>`
+
+```asm
+<example::Counter as example::union_fn::CallWithContext>::call:
+        sub     rsp, 40
+        mov     rax, qword ptr [rdi]
+        test    rax, rax
+        je      .LBB3_8
+        cmp     eax, 1
+        jne     .LBB3_6
+        movups  xmm0, xmmword ptr [rdi + 8]
+        movups  xmm1, xmmword ptr [rdi + 24]
+        movaps  xmmword ptr [rsp + 16], xmm1
+        movaps  xmmword ptr [rsp], xmm0
+        mov     rax, qword ptr [rsi]
+        cmp     rax, 3
+        ja      .LBB3_3
+        mov     rax, qword ptr [rsp + 8*rax]
+        mov     qword ptr [rsi], rax
+        add     rsp, 40
+        ret
+.LBB3_8:
+        mov     rax, qword ptr [rdi + 8]
+        add     qword ptr [rsi], rax
+        add     rsp, 40
+        ret
+.LBB3_6:
+        mov     qword ptr [rsi], 0
+        add     rsp, 40
+        ret
+.LBB3_3:
+        xor     eax, eax
+        mov     qword ptr [rsi], rax
+        add     rsp, 40
+        ret
+```
+
+### `Call[WithContext] for <opt>`
+
+```asm
+<example::_::CounterOpt as example::union_fn::CallWithContext>::call:
+        mov     rax, rsi
+        mov     rcx, qword ptr [rdi]
+        lea     rsi, [rdi + 8]
+        mov     rdi, rax
+        jmp     rcx
 ```
