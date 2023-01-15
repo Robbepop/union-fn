@@ -6,10 +6,9 @@ mod stack;
 
 use self::{
     context::{Control, ExecutionContext},
-    instr::Instr,
     stack::Stack,
 };
-use union_fn::CallWithContext;
+use union_fn::{CallWithContext, UnionFn};
 use wasmi_core::TrapCode;
 
 /// Executes the given sequence of instructions and returns the result.
@@ -17,7 +16,13 @@ use wasmi_core::TrapCode;
 /// # Errors
 ///
 /// If a trap occurs during execution.
-pub fn execute(instrs: &[Instr], inputs: &[i64]) -> Result<i64, TrapCode> {
+pub fn execute<Instr>(instrs: &[Instr], inputs: &[i64]) -> Result<i64, TrapCode>
+where
+    Instr: CallWithContext<Context = ExecutionContext>
+        + UnionFn<Output = Result<Control, TrapCode>>
+        + Copy
+        + Clone,
+{
     let mut ctx = ExecutionContext::default();
     ctx.feed_inputs(inputs);
     while let Some(instr) = instrs.get(ctx.ip()) {
