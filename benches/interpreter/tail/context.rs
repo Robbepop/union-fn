@@ -5,7 +5,7 @@ use wasmi_core::{TrapCode, UntypedValue};
 /// The execution state.
 pub struct ExecutionContext {
     ip: usize,
-    instrs: Vec<InstrOpt>,
+    instrs: Box<[InstrOpt]>,
     pub stack: Stack,
 }
 
@@ -17,7 +17,7 @@ impl ExecutionContext {
     pub fn new(instrs: &[InstrOpt]) -> Self {
         Self {
             ip: 0,
-            instrs: instrs.to_vec(),
+            instrs: instrs.into(),
             stack: Stack::new(100),
         }
     }
