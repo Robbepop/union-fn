@@ -42,6 +42,7 @@ impl ExecutionContext {
     }
 
     /// Calls the instruction currently pointed at by the `ip`.
+    #[inline]
     fn call_ip(&mut self) -> CallResult {
         // println!("{:?}\n", self.stack);
         debug_assert!(self.ip < self.instrs.len());
@@ -62,23 +63,27 @@ impl ExecutionContext {
     }
 
     /// Continues with the next instruction in the sequence.
+    #[inline]
     pub fn next_instr(&mut self) -> CallResult {
         self.ip += 1;
         self.call_ip()
     }
 
     /// Branches to another instruction using the given `offset` to the `ip`.
+    #[inline]
     pub fn goto_instr(&mut self, offset: isize) -> CallResult {
         self.ip = (self.ip as isize + offset) as usize;
         self.call_ip()
     }
 
     /// Returns the top most value on the stack.
+    #[inline]
     pub fn ret(&mut self) -> CallResult {
         Ok(())
     }
 
     /// Executes a binary instruction on the [`Stack`] via `f`.
+    #[inline]
     pub fn execute_binary(
         &mut self,
         f: fn(UntypedValue, UntypedValue) -> UntypedValue,
