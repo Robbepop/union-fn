@@ -1,6 +1,15 @@
 pub use union_fn::union_fn;
 pub use union_fn::CallWithContext as _;
 
+const _: () = {
+    const fn is_send<T:Send>() {}
+    const fn is_sync<T:Sync>() {}
+    let _ = is_send::<Instruction>();
+    let _ = is_sync::<Instruction>();
+    let _ = is_send::<<Instruction as ::union_fn::IntoOpt>::Opt>();
+    let _ = is_sync::<<Instruction as ::union_fn::IntoOpt>::Opt>();
+};
+
 #[union_fn]
 trait Instruction {
     type Context = ExecutionContext;
