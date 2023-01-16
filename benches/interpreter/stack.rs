@@ -25,6 +25,15 @@ impl Stack {
         }
     }
 
+    /// Clears all values from the [`Stack`].
+    ///
+    /// # Note
+    ///
+    /// After this operation the [`Stack`] is equivalent to an empty [`Stack`].
+    pub fn clear(&mut self) {
+        self.sp = 0;
+    }
+
     /// Returns the `n`-th value on the [`Stack`] from the bottom.
     pub fn get_nth(&self, n: usize) -> UntypedValue {
         self.values[n]

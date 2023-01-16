@@ -27,12 +27,15 @@ impl Default for ExecutionContext {
 }
 
 impl ExecutionContext {
+    /// Feed the following inputs to the [`ExecutionContext`].
     pub fn feed_inputs(&mut self, inputs: &[i64]) {
+        self.stack.clear();
         for input in inputs {
             self.stack.push(UntypedValue::from(*input))
         }
     }
 
+    /// Returns the current instruction pointer.
     pub fn ip(&self) -> usize {
         self.ip
     }
