@@ -13,10 +13,6 @@ pub struct Stack {
 
 impl Debug for Stack {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        // f.debug_struct("Stack")
-        //     .field("sp", &self.sp)
-        //     .field("values", &&self.values[..self.sp])
-        //     .finish()
         let values = &self.values[..self.sp];
         if let Some((first, rest)) = values.split_first() {
             write!(f, "[{}", i64::from(*first))?;
