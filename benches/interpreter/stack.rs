@@ -72,35 +72,35 @@ impl Stack {
 
     /// Push the `value` onto the [`Stack`].
     pub fn push(&mut self, value: UntypedValue) {
-        self.values[self.sp] = value;
+        self.set(self.sp, value);
         self.sp += 1;
     }
 
     /// Peeks the top most value from the [`Stack`] and returns it.
     pub fn peek(&self) -> UntypedValue {
-        self.values[self.sp - 1]
+        self.get(self.sp - 1)
     }
 
     /// Pops the top most value from the [`Stack`] and returns it.
     pub fn pop(&mut self) -> UntypedValue {
         self.sp -= 1;
-        self.values[self.sp]
+        self.get(self.sp)
     }
 
     /// Pops the top most value `t` from the [`Stack`] and pushes back the result of `f(t)`.
     pub fn eval(&mut self, f: impl FnOnce(UntypedValue) -> UntypedValue) {
-        let input = self.values[self.sp - 1];
+        let input = self.get(self.sp - 1);
         let result = f(input);
-        self.values[self.sp - 1] = result;
+        self.set(self.sp - 1, result);
     }
 
     /// Pops the two top most values `t0` and `t1` from the [`Stack`] and pushes back the result of `f(t0, t1)`.
     pub fn eval2(&mut self, f: impl FnOnce(UntypedValue, UntypedValue) -> UntypedValue) {
         self.sp -= 1;
-        let rhs = self.values[self.sp];
-        let lhs = self.values[self.sp - 1];
+        let rhs = self.get(self.sp);
+        let lhs = self.get(self.sp - 1);
         let result = f(lhs, rhs);
-        self.values[self.sp - 1] = result;
+        self.set(self.sp - 1, result);
     }
 
     /// Pops the two top most values `t0` and `t1` from the [`Stack`] and pushes back the result of `f(t0, t1)`.
@@ -109,10 +109,10 @@ impl Stack {
         f: impl FnOnce(UntypedValue, UntypedValue) -> Result<UntypedValue, TrapCode>,
     ) -> Result<(), TrapCode> {
         self.sp -= 1;
-        let rhs = self.values[self.sp];
-        let lhs = self.values[self.sp - 1];
+        let rhs = self.get(self.sp);
+        let lhs = self.get(self.sp - 1);
         let result = f(lhs, rhs)?;
-        self.values[self.sp - 1] = result;
+        self.set(self.sp - 1, result);
         Ok(())
     }
 
@@ -122,10 +122,10 @@ impl Stack {
         f: impl FnOnce(UntypedValue, UntypedValue, UntypedValue) -> UntypedValue,
     ) {
         self.sp -= 2;
-        let t2 = self.values[self.sp + 1];
-        let t1 = self.values[self.sp];
-        let t0 = self.values[self.sp - 1];
+        let t2 = self.get(self.sp + 1);
+        let t1 = self.get(self.sp);
+        let t0 = self.get(self.sp - 1);
         let result = f(t0, t1, t2);
-        self.values[self.sp - 1] = result;
+        self.set(self.sp - 1, result);
     }
 }
