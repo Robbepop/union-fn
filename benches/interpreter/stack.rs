@@ -8,7 +8,7 @@ pub struct Stack {
     /// Points to the next free element.
     sp: usize,
     /// The values on the stack.
-    values: Vec<UntypedValue>,
+    values: Box<[UntypedValue]>,
 }
 
 impl Debug for Stack {
@@ -37,7 +37,7 @@ impl Stack {
     pub fn new(capacity: usize) -> Self {
         Self {
             sp: 0,
-            values: vec![UntypedValue::default(); capacity],
+            values: vec![UntypedValue::default(); capacity].into(),
         }
     }
 
