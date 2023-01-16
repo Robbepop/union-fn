@@ -1,5 +1,5 @@
-use super::ExecutionContext;
 use super::super::BranchOffset;
+use super::ExecutionContext;
 use union_fn::union_fn;
 use wasmi_core::{TrapCode, UntypedValue};
 
@@ -14,7 +14,7 @@ use wasmi_core::{TrapCode, UntypedValue};
 #[derive(Debug)]
 pub trait Instr {
     type Context = ExecutionContext;
-    type Output = Result<i64, TrapCode>;
+    type Output = Result<(), TrapCode>;
 
     /// Executes `local.get` operation.
     fn local_get(ctx: &mut Self::Context, n: usize) -> Self::Output {

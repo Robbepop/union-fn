@@ -1,6 +1,6 @@
 use super::{super::Stack, Instr};
 use union_fn::{CallWithContext, IntoOpt, UnionFn};
-use wasmi_core::UntypedValue;
+use wasmi_core::{TrapCode, UntypedValue};
 
 /// The execution state.
 pub struct ExecutionContext {
@@ -33,10 +33,12 @@ impl ExecutionContext {
     }
 
     /// Executes the [`ExecutionContext`] using the given `inputs`.
-    pub fn execute(&mut self, inputs: &[i64]) -> CallResult {
+    pub fn execute(&mut self, inputs: &[i64]) -> Result<i64, TrapCode> {
         // println!("\nSTART\n");
         self.feed_inputs(inputs);
-        self.instrs[0].call(self)
+        self.instrs[0].call(self)?;
+        let result: i64 = self.stack.pop().into();
+        Ok(result)
     }
 
     /// Calls the instruction currently pointed at by the `ip`.
@@ -68,8 +70,7 @@ impl ExecutionContext {
 
     /// Returns the top most value on the stack.
     pub fn ret(&mut self) -> CallResult {
-        let result: i64 = self.stack.pop().into();
-        Ok(result)
+        Ok(())
     }
 
     /// Executes a binary instruction on the [`Stack`] via `f`.
