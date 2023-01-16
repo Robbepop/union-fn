@@ -3,8 +3,8 @@ mod instr;
 mod stack;
 mod tail;
 
-pub use self::tail::{ExecutionContext as TailContext, Instr as TailInstr};
 pub use self::instr::{BranchOffset, Instr};
+pub use self::tail::{ExecutionContext as TailContext, Instr as TailInstr};
 use self::{
     context::{Control, ExecutionContext},
     stack::Stack,

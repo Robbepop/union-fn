@@ -9,7 +9,7 @@
 mod interpreter;
 
 use criterion::{criterion_group, criterion_main, Criterion};
-use interpreter::{execute, BranchOffset, Instr, TailInstr, TailContext};
+use interpreter::{execute, BranchOffset, Instr, TailContext, TailInstr};
 use std::time::Duration;
 use union_fn::IntoOpt;
 
