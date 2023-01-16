@@ -36,9 +36,18 @@ impl ExecutionContext {
     pub fn execute(&mut self, inputs: &[i64]) -> Result<i64, TrapCode> {
         // println!("\nSTART\n");
         self.feed_inputs(inputs);
-        self.instrs[0].call(self)?;
+        self.call_ip()?;
         let result: i64 = self.stack.pop().into();
         Ok(result)
+    }
+
+    /// Feed the following inputs to the [`ExecutionContext`].
+    pub fn feed_inputs(&mut self, inputs: &[i64]) {
+        self.ip = 0;
+        self.stack.clear();
+        for input in inputs {
+            self.stack.push(UntypedValue::from(*input))
+        }
     }
 
     /// Calls the instruction currently pointed at by the `ip`.
@@ -53,26 +62,17 @@ impl ExecutionContext {
         unsafe { self.instrs.get_unchecked(self.ip).call(self) }
     }
 
-    /// Feed the following inputs to the [`ExecutionContext`].
-    pub fn feed_inputs(&mut self, inputs: &[i64]) {
-        self.ip = 0;
-        self.stack.clear();
-        for input in inputs {
-            self.stack.push(UntypedValue::from(*input))
-        }
-    }
-
     /// Continues with the next instruction in the sequence.
     #[inline]
     pub fn next_instr(&mut self) -> CallResult {
-        self.ip += 1;
+        self.ip = self.ip.wrapping_add(1);
         self.call_ip()
     }
 
     /// Branches to another instruction using the given `offset` to the `ip`.
     #[inline]
     pub fn goto_instr(&mut self, offset: isize) -> CallResult {
-        self.ip = (self.ip as isize + offset) as usize;
+        self.ip = (self.ip as isize).wrapping_add(offset) as usize;
         self.call_ip()
     }
 

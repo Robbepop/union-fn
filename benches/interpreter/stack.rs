@@ -88,6 +88,7 @@ impl Stack {
     }
 
     /// Pops the top most value `t` from the [`Stack`] and pushes back the result of `f(t)`.
+    #[inline]
     pub fn eval(&mut self, f: impl FnOnce(UntypedValue) -> UntypedValue) {
         let input = self.get(self.sp - 1);
         let result = f(input);
@@ -95,6 +96,7 @@ impl Stack {
     }
 
     /// Pops the two top most values `t0` and `t1` from the [`Stack`] and pushes back the result of `f(t0, t1)`.
+    #[inline]
     pub fn eval2(&mut self, f: impl FnOnce(UntypedValue, UntypedValue) -> UntypedValue) {
         self.sp -= 1;
         let rhs = self.get(self.sp);
@@ -104,6 +106,7 @@ impl Stack {
     }
 
     /// Pops the two top most values `t0` and `t1` from the [`Stack`] and pushes back the result of `f(t0, t1)`.
+    #[inline]
     pub fn try_eval2(
         &mut self,
         f: impl FnOnce(UntypedValue, UntypedValue) -> Result<UntypedValue, TrapCode>,
@@ -117,6 +120,7 @@ impl Stack {
     }
 
     /// Pops the three top most values `t0`,..`t2` from the [`Stack`] and pushes back the result of `f(t0,..t2)`.
+    #[inline]
     pub fn eval3(
         &mut self,
         f: impl FnOnce(UntypedValue, UntypedValue, UntypedValue) -> UntypedValue,
