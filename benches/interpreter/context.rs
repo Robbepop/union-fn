@@ -45,7 +45,7 @@ impl ExecutionContext {
 
     /// Branches to another instruction using the given `offset` to the `ip`.
     pub fn goto_instr(&mut self, offset: isize) -> Result<Control, TrapCode> {
-        self.ip += offset as usize;
+        self.ip = (self.ip as isize + offset) as usize;
         Ok(Control::Continue)
     }
 
