@@ -43,10 +43,12 @@ fn count_until() -> Vec<Instr> {
     ]
 }
 
+const UNTIL: i64 = 1_000_000;
+
 fn bench_interpret_enum(c: &mut Criterion) {
     c.bench_function("interpret/enum", |b| {
         let instrs = count_until();
-        b.iter(|| execute(&instrs, &[1_000_000]))
+        b.iter(|| execute(&instrs, &[UNTIL]))
     });
 }
 
@@ -56,7 +58,7 @@ fn bench_interpret_opt(c: &mut Criterion) {
             .into_iter()
             .map(IntoOpt::into_opt)
             .collect::<Vec<_>>();
-        b.iter(|| execute(&instrs, &[1_000_000]))
+        b.iter(|| execute(&instrs, &[UNTIL]))
     });
 }
 
@@ -84,6 +86,6 @@ fn bench_interpret_tail(c: &mut Criterion) {
             .map(IntoOpt::into_opt)
             .collect::<Vec<_>>();
         let mut ctx = TailContext::new(&instrs);
-        b.iter(|| ctx.execute(&[10_000]))
+        b.iter(|| ctx.execute(&[UNTIL]))
     });
 }
