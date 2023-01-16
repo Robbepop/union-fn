@@ -44,7 +44,12 @@ impl ExecutionContext {
     /// Calls the instruction currently pointed at by the `ip`.
     fn call_ip(&mut self) -> CallResult {
         // println!("{:?}\n", self.stack);
-        self.instrs[self.ip].call(self)
+        debug_assert!(self.ip < self.instrs.len());
+        // SAFETY: In debug mode we still test for the bounds.
+        //         This unchecked_get is experimental to see whether
+        //         Rust will then properly generate tail calls in
+        //         some situations.
+        unsafe { self.instrs.get_unchecked(self.ip).call(self) }
     }
 
     /// Feed the following inputs to the [`ExecutionContext`].
