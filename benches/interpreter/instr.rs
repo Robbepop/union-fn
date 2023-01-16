@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use super::context::Control;
 use super::context::ExecutionContext;
 use core::num::NonZeroIsize;

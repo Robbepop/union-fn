@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 mod context;
 mod instr;
 mod stack;

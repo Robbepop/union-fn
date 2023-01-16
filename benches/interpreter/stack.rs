@@ -61,14 +61,6 @@ impl Stack {
         self.values[self.sp]
     }
 
-    /// Pops the two top most values from the [`Stack`] and returns them.
-    pub fn pop2(&mut self) -> (UntypedValue, UntypedValue) {
-        self.sp -= 2;
-        let lhs = self.values[self.sp];
-        let rhs = self.values[self.sp + 1];
-        (lhs, rhs)
-    }
-
     /// Pops the top most value `t` from the [`Stack`] and pushes back the result of `f(t)`.
     pub fn eval(&mut self, f: impl FnOnce(UntypedValue) -> UntypedValue) {
         let input = self.values[self.sp - 1];
