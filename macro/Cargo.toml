@@ -1,6 +1,6 @@
 [package]
 name = "union-fn-macro"
-version = "0.1.0"
+version = "0.2.0"
 documentation = "https://docs.rs/union-fn-macro/"
 description = "Proc. macro implementation for creating efficient \"inline closures\"."
 authors.workspace = true

@@ -1,6 +1,6 @@
 [package]
 name = "union-fn"
-version = "0.1.0"
+version = "0.2.0"
 documentation = "https://docs.rs/union-fn/"
 description = "Proc. macro for creating efficient \"inline closures\"."
 authors.workspace = true
@@ -21,7 +21,7 @@ keywords = ["closure", "interpreter", "dispatch", "instruction", "function"]
 categories = ["data-structures", "no-std", "emulators"]
 
 [dependencies]
-union-fn-macro = { version = "0.1.0", path = "macro" }
+union-fn-macro = { version = "0.2.0", path = "macro" }
 
 [dev-dependencies]
 trybuild = { version = "1.0.60", features = ["diff"] }
