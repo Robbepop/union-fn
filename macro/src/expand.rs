@@ -333,6 +333,7 @@ impl UnionFn {
                     impl ::union_fn::CallWithContext for #ident_opt {
                         type Context = #context;
 
+                        #[inline]
                         fn call(self, ctx: &mut Self::Context) -> <#ident as ::union_fn::UnionFn>::Output {
                             (self.handler)(ctx, &self.args)
                         }
@@ -342,6 +343,7 @@ impl UnionFn {
             None => {
                 quote_spanned!(span=>
                     impl ::union_fn::Call for #ident_opt {
+                        #[inline]
                         fn call(self) -> <#ident as ::union_fn::UnionFn>::Output {
                             (self.handler)(&self.args)
                         }
