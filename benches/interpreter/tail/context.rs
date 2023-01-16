@@ -12,16 +12,6 @@ pub struct ExecutionContext {
 type InstrOpt = <Instr as IntoOpt>::Opt;
 type CallResult = <Instr as UnionFn>::Output;
 
-impl Default for ExecutionContext {
-    fn default() -> Self {
-        Self {
-            ip: 0,
-            instrs: Vec::new(),
-            stack: Stack::new(100),
-        }
-    }
-}
-
 impl ExecutionContext {
     /// Creates a new [`ExecutionContext`] for the given instructions.
     pub fn new(instrs: &[InstrOpt]) -> Self {
