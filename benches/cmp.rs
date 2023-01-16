@@ -9,7 +9,7 @@
 mod interpreter;
 
 use criterion::{criterion_group, criterion_main, Criterion};
-use interpreter::{execute, BranchOffset, Instr};
+use interpreter::{execute, BranchOffset, Instr, TailContext, TailInstr};
 use std::time::Duration;
 use union_fn::IntoOpt;
 
@@ -22,6 +22,7 @@ criterion_group!(
     targets =
         bench_interpret_enum,
         bench_interpret_opt,
+        bench_interpret_tail,
 );
 criterion_main!(bench_interpret);
 
@@ -42,10 +43,12 @@ fn count_until() -> Vec<Instr> {
     ]
 }
 
+const UNTIL: i64 = 1_000_000;
+
 fn bench_interpret_enum(c: &mut Criterion) {
     c.bench_function("interpret/enum", |b| {
         let instrs = count_until();
-        b.iter(|| execute(&instrs, &[1_000_000]))
+        b.iter(|| execute(&instrs, &[UNTIL]))
     });
 }
 
@@ -55,6 +58,34 @@ fn bench_interpret_opt(c: &mut Criterion) {
             .into_iter()
             .map(IntoOpt::into_opt)
             .collect::<Vec<_>>();
-        b.iter(|| execute(&instrs, &[1_000_000]))
+        b.iter(|| execute(&instrs, &[UNTIL]))
+    });
+}
+
+/// Instructions for counting until a given input from zero.
+fn tail_count_until() -> Vec<TailInstr> {
+    vec![
+        TailInstr::constant(0),  // local: counter
+        TailInstr::local_get(1), // dup(counter)
+        TailInstr::constant(1),
+        TailInstr::add(),        // counter + 1
+        TailInstr::local_tee(1), // counter = counter + 1
+        TailInstr::local_get(0), // local: until
+        TailInstr::ne(),
+        TailInstr::br_eqz(BranchOffset::new(2)),
+        TailInstr::br(BranchOffset::new(-7)),
+        TailInstr::local_get(1),
+        TailInstr::ret(),
+    ]
+}
+
+fn bench_interpret_tail(c: &mut Criterion) {
+    c.bench_function("interpret/tail", |b| {
+        let instrs = tail_count_until()
+            .into_iter()
+            .map(IntoOpt::into_opt)
+            .collect::<Vec<_>>();
+        let mut ctx = TailContext::new(&instrs);
+        b.iter(|| ctx.execute(&[UNTIL]))
     });
 }
