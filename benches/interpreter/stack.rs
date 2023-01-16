@@ -1,7 +1,7 @@
+use std::fmt::{self, Debug};
 use wasmi_core::{TrapCode, UntypedValue};
 
 /// The value stack.
-#[derive(Debug)]
 pub struct Stack {
     /// The stack pointer.
     ///
@@ -9,6 +9,26 @@ pub struct Stack {
     sp: usize,
     /// The values on the stack.
     values: Vec<UntypedValue>,
+}
+
+impl Debug for Stack {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // f.debug_struct("Stack")
+        //     .field("sp", &self.sp)
+        //     .field("values", &&self.values[..self.sp])
+        //     .finish()
+        let values = &self.values[..self.sp];
+        if let Some((first, rest)) = values.split_first() {
+            write!(f, "[{}", i64::from(*first))?;
+            for value in rest {
+                write!(f, ", {}", i64::from(*value))?;
+            }
+            write!(f, "]")?;
+            Ok(())
+        } else {
+            write!(f, "[]")
+        }
+    }
 }
 
 impl Stack {
