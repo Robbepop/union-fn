@@ -56,12 +56,22 @@ impl Stack {
 
     /// Returns the `n`-th value on the [`Stack`] from the bottom.
     pub fn get(&self, n: usize) -> UntypedValue {
-        self.values[n]
+        debug_assert!(n < self.values.len());
+        // SAFETY: In debug mode we still test for the bounds.
+        //         This unchecked_get is experimental to see whether
+        //         Rust will then properly generate tail calls in
+        //         some situations.
+        unsafe { *self.values.get_unchecked(n) }
     }
 
     /// Sets the `n`-th value on the [`Stack`] from the bottom to the new `value`.
     pub fn set(&mut self, n: usize, value: UntypedValue) {
-        self.values[n] = value;
+        debug_assert!(n < self.values.len());
+        // SAFETY: In debug mode we still test for the bounds.
+        //         This unchecked_get is experimental to see whether
+        //         Rust will then properly generate tail calls in
+        //         some situations.
+        *unsafe { self.values.get_unchecked_mut(n) } = value;
     }
 
     /// Push the `value` onto the [`Stack`].
