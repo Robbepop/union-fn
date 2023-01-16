@@ -349,6 +349,11 @@ impl UnionFn {
         self.item.span()
     }
 
+    /// Returns the attributes applied to the `#[union_fn]` trait.
+    pub fn attrs(&self) -> &[syn::Attribute] {
+        &self.item.attrs
+    }
+
     /// Returns the identifier of the `#[union_fn]` trait.
     pub fn ident(&self) -> &syn::Ident {
         &self.item.ident

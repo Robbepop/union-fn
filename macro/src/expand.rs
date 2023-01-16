@@ -184,10 +184,12 @@ impl UnionFn {
     fn expand_union_fn_enum(&self) -> TokenStream2 {
         let trait_span = self.span();
         let trait_ident = self.ident();
+        let attrs = self.attrs();
         let variants = self.expand_union_fn_enum_variants();
         let constructors = self.expand_union_fn_enum_constructors();
         let call_impl = self.expand_union_fn_enum_call_impl();
         quote_spanned!(trait_span=>
+            #( #attrs )*
             #[derive(::core::marker::Copy, ::core::clone::Clone)]
             pub enum #trait_ident {
                 #( #variants ),*
