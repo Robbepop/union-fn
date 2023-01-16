@@ -84,6 +84,6 @@ fn bench_interpret_tail(c: &mut Criterion) {
             .map(IntoOpt::into_opt)
             .collect::<Vec<_>>();
         let mut ctx = TailContext::new(&instrs);
-        b.iter(|| ctx.execute(&[1_000]))
+        b.iter(|| ctx.execute(&[10_000]))
     });
 }
