@@ -55,12 +55,12 @@ impl Stack {
     }
 
     /// Returns the `n`-th value on the [`Stack`] from the bottom.
-    pub fn get_nth(&self, n: usize) -> UntypedValue {
+    pub fn get(&self, n: usize) -> UntypedValue {
         self.values[n]
     }
 
     /// Sets the `n`-th value on the [`Stack`] from the bottom to the new `value`.
-    pub fn set_nth(&mut self, n: usize, value: UntypedValue) {
+    pub fn set(&mut self, n: usize, value: UntypedValue) {
         self.values[n] = value;
     }
 

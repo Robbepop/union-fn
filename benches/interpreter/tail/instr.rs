@@ -19,7 +19,7 @@ pub trait Instr {
     /// Executes `local.get` operation.
     fn local_get(ctx: &mut Self::Context, n: usize) -> Self::Output {
         // println!("local.get {n}");
-        let value = ctx.stack.get_nth(n);
+        let value = ctx.stack.get(n);
         ctx.stack.push(value);
         ctx.next_instr()
     }
@@ -28,7 +28,7 @@ pub trait Instr {
     fn local_tee(ctx: &mut Self::Context, n: usize) -> Self::Output {
         // println!("local.tee {n}");
         let value = ctx.stack.peek();
-        ctx.stack.set_nth(n, value);
+        ctx.stack.set(n, value);
         ctx.next_instr()
     }
 
