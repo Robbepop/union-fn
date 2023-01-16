@@ -34,7 +34,6 @@ members = ["macro"]
 [profile.bench]
 lto = "fat"
 codegen-units = 1
-panic = "abort"
 
 [[bench]]
 name = "cmp"
